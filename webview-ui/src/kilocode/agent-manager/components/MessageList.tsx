@@ -575,7 +575,10 @@ function QueuedMessageItem({ queuedMessage, isSending: _isSending, onRetry, onDi
 				<div className="am-message-body">
 					<SimpleMarkdown content={queuedMessage.content} />
 					{queuedMessage.images && queuedMessage.images.length > 0 && (
-						<MessageThumbnails images={queuedMessage.images} style={{ marginTop: "8px" }} />
+						<MessageThumbnails
+							images={queuedMessage.images.map((img) => (typeof img === "string" ? img : img.dataUrl))}
+							style={{ marginTop: "8px" }}
+						/>
 					)}
 				</div>
 				{queuedMessage.status === "failed" && (

@@ -33,6 +33,7 @@ import { McpMarketplaceCatalog } from "../../../src/shared/kilocode/mcp" // kilo
 import { vscode } from "@src/utils/vscode"
 import { convertTextMateToHljs } from "@src/utils/textMateToHljs"
 import { ClineRulesToggles } from "@roo/cline-rules" // kilocode_change
+import { setSkills } from "@src/utils/slash-commands" // kilocode_change: for skills in slash commands
 
 export interface ExtensionStateContextType extends ExtensionState {
 	historyPreviewCollapsed?: boolean
@@ -531,6 +532,22 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					}
 					break
 				}
+				// kilocode_change start: Handle skills data for slash command autocomplete
+				case "skillsData": {
+					if (message.skills) {
+						// Convert skills to SlashCommand format
+						const slashCommands = message.skills.map((skill: any) => ({
+							name: skill.name,
+							description: skill.description || `Use ${skill.name} skill`,
+							source: "skill" as const,
+							skillPath: skill.path,
+							skillType: (skill.source === "project" ? "workspace" : "global") as "workspace" | "global",
+						}))
+						setSkills(slashCommands)
+					}
+					break
+				}
+				// kilocode_change end
 			}
 		},
 		[setListApiConfigMeta],

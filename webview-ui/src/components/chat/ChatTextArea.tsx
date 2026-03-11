@@ -964,7 +964,7 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 				if (showSlashCommandsMenu) {
 					// kilocode_change start: Slash command query handling
-					const slashIndex = newValue.indexOf("/")
+					const slashIndex = newValue.lastIndexOf("/")
 					const query = newValue.slice(slashIndex + 1, newCursorPosition)
 					setSlashCommandsQuery(query)
 					setSelectedSlashCommandsIndex(0)

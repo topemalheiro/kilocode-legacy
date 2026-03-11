@@ -531,6 +531,7 @@ export const webviewMessageHandler = async (
 
 			provider.postStateToWebview()
 			provider.postRulesDataToWebview() // kilocode_change: send workflows and rules immediately
+			provider.postSkillsDataToWebview() // kilocode_change: send skills immediately on webview launch
 			provider.workspaceTracker?.initializeFilePaths() // Don't await.
 
 			getTheme().then((theme) => provider.postMessageToWebview({ type: "theme", text: JSON.stringify(theme) }))

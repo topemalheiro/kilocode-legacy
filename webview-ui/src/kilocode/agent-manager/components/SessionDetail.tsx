@@ -12,6 +12,7 @@ import {
 	renameSessionAtom,
 	type RunMode,
 	type VersionCount,
+	type ImageAttachment,
 } from "../state/atoms/sessions"
 import {
 	modelsConfigAtom,
@@ -343,7 +344,7 @@ function PendingSessionView({
 function NewAgentForm() {
 	const { t } = useTranslation("agentManager")
 	const [promptText, setPromptText] = useState("")
-	const [selectedImages, setSelectedImages] = useState<string[]>([])
+	const [selectedImages, setSelectedImages] = useState<ImageAttachment[]>([])
 	const [runMode, setRunMode] = useAtom(preferredRunModeAtom)
 	const [versionCount, setVersionCount] = useAtom(versionCountAtom)
 	const setSelectedModelId = useSetAtom(setSelectedModelIdAtom)
@@ -547,7 +548,13 @@ function NewAgentForm() {
 					{selectedImages.length > 0 && (
 						<div className="absolute bottom-10 left-3 right-2 z-30 flex items-center gap-1.5 pb-1">
 							{selectedImages.map((image, index) => (
-								<ImageThumbnail key={index} src={image} index={index} onRemove={removeImage} />
+								<ImageThumbnail
+									key={index}
+									src={image.dataUrl}
+									filePath={image.filePath}
+									index={index}
+									onRemove={removeImage}
+								/>
 							))}
 						</div>
 					)}

@@ -10,6 +10,26 @@ export interface SlashCommand {
 	name: string
 	description?: string
 	section?: "default" | "custom"
+	source?: "command" | "mode" | "skill" | "workflow"
+	skillPath?: string
+	skillType?: "workspace" | "global"
+}
+
+// Skills storage - will be populated by VSCode extension
+let cachedSkills: SlashCommand[] = []
+
+/**
+ * Set skills from VSCode extension (called when skills are loaded)
+ */
+export function setSkills(skills: SlashCommand[]): void {
+	cachedSkills = skills
+}
+
+/**
+ * Get currently cached skills
+ */
+export function getCachedSkills(): SlashCommand[] {
+	return cachedSkills
 }
 
 // Create a function to get all supported slash commands
@@ -23,30 +43,45 @@ export function getSupportedSlashCommands(
 		{
 			name: "newtask",
 			description: "Create a new task with context from the current task",
+			source: "command",
 		},
 		{
 			name: "newrule",
 			description: "Create a new Kilo rule with context from your conversation",
+			source: "command",
 		},
-		{ name: "reportbug", description: "Create a KiloCode GitHub issue" },
+		{ name: "reportbug", description: "Create a KiloCode GitHub issue", source: "command" },
 		// kilocode_change start
-		{ name: "init", description: "Initialize Kilo Code for this workspace" },
-		{ name: "smol", description: "Condenses your current context window" },
-		{ name: "condense", description: "Condenses your current context window" },
-		{ name: "compact", description: "Condenses your current context window" },
-		{ name: "session", description: "Session management <fork|share|show>" },
+		{ name: "init", description: "Initialize Kilo Code for this workspace", source: "command" },
+		{ name: "smol", description: "Condenses your current context window", source: "command" },
+		{ name: "condense", description: "Condenses your current context window", source: "command" },
+		{ name: "compact", description: "Condenses your current context window", source: "command" },
+		{ name: "session", description: "Session management <fork|share|show>", source: "command" },
 		// kilocode_change end
 	]
 
 	// Add mode-switching commands dynamically
-	const modeCommands = getAllModes(customModes).map((mode) => ({
+	const modeCommands: SlashCommand[] = getAllModes(customModes).map((mode) => ({
 		name: mode.slug,
 		description: `Switch to ${mode.name.replace(/^[💻🏗️❓🪲🪃]+ /, "")} mode`,
+		source: "mode",
 	}))
 
 	// add workflow commands
-	const workflowCommands = getWorkflowCommands(localWorkflowToggles, globalWorkflowToggles)
-	return [...baseCommands, ...modeCommands, ...workflowCommands]
+	const workflowCommands: SlashCommand[] = getWorkflowCommands(localWorkflowToggles, globalWorkflowToggles).map(
+		(cmd) => ({
+			...cmd,
+			source: "workflow" as const,
+		}),
+	)
+
+	// Add skills from cache
+	const skillCommands: SlashCommand[] = cachedSkills.map((skill) => ({
+		...skill,
+		source: "skill" as const,
+	}))
+
+	return [...baseCommands, ...modeCommands, ...workflowCommands, ...skillCommands]
 }
 
 // Export a default instance for backward compatibility
@@ -58,14 +93,16 @@ export const slashCommandRegexGlobal = new RegExp(slashCommandRegex.source, "g")
 
 /**
  * Determines whether the slash command menu should be displayed based on text input
+ * @param allowAnywhere - If true, allows slash commands anywhere in text (not just at beginning)
  */
-// kilocode_change start: Added workflow toggles parameters
+// kilocode_change start: Added workflow toggles parameters and allowAnywhere option
 export function shouldShowSlashCommandsMenu(
 	text: string,
 	cursorPosition: number,
 	customModes?: any[],
 	localWorkflowToggles: ClineRulesToggles = {},
 	globalWorkflowToggles: ClineRulesToggles = {},
+	allowAnywhere: boolean = true,
 ): boolean {
 	// kilocode_change end
 	const beforeCursor = text.slice(0, cursorPosition)
@@ -78,8 +115,9 @@ export function shouldShowSlashCommandsMenu(
 	}
 
 	// check if slash is at the very beginning (with optional whitespace)
+	// OR allow triggering anywhere in text if allowAnywhere is true
 	const textBeforeSlash = beforeCursor.slice(0, slashIndex)
-	if (!/^\s*$/.test(textBeforeSlash)) {
+	if (!allowAnywhere && !/^\s*$/.test(textBeforeSlash)) {
 		return false
 	}
 

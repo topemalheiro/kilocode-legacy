@@ -7,6 +7,7 @@ import {
 	removeFromQueueAtom,
 	setSendingMessageAtom,
 } from "../atoms/messageQueue"
+import { ImageAttachment } from "../atoms/sessions"
 import { vscode } from "../../utils/vscode"
 
 /**
@@ -27,7 +28,7 @@ export function useMessageQueueProcessor(sessionId: string | null) {
 
 	// Send the next queued message (including images if present)
 	const sendNextMessage = useCallback(
-		(messageId: string, content: string, images?: string[]) => {
+		(messageId: string, content: string, images?: ImageAttachment[]) => {
 			if (!sessionId) return
 
 			setSendingMessage({ sessionId, messageId })

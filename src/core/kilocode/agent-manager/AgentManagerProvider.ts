@@ -443,6 +443,9 @@ export class AgentManagerProvider implements vscode.Disposable {
 				case "agentManager.setMode":
 					void this.setSessionMode(message.sessionId as string, message.mode as string)
 					break
+				case "agentManager.findRecentScreenshot":
+					void this.handleFindRecentScreenshot()
+					break
 			}
 		} catch (error) {
 			this.outputChannel.appendLine(`Error handling message: ${error}`)
@@ -1260,6 +1263,84 @@ export class AgentManagerProvider implements vscode.Disposable {
 				void vscode.env.clipboard.writeText(branch)
 			}
 		})
+	}
+
+	/**
+	 * Handle request from webview to find the most recent screenshot.
+	 * Searches standard Windows screenshot locations and returns the path.
+	 */
+	private async handleFindRecentScreenshot(): Promise<void> {
+		try {
+			// Get user's home directory
+			const homedir = require("node:os").homedir()
+			const screenshotDirs = [
+				// Windows 10/11 default Screenshots folder
+				path.join(homedir, "Pictures", "Screenshots"),
+				// Alternative location
+				path.join(homedir, "OneDrive", "Pictures", "Screenshots"),
+				// Older Windows location
+				path.join(homedir, "Desktop"),
+			]
+
+			let mostRecentPath: string | undefined
+			let mostRecentTime = 0
+
+			for (const dir of screenshotDirs) {
+				if (!fs.existsSync(dir)) continue
+
+				try {
+					const files = fs.readdirSync(dir)
+					for (const file of files) {
+						// Look for screenshot files (PNG, JPG)
+						const ext = path.extname(file).toLowerCase()
+						if (ext !== ".png" && ext !== ".jpg" && ext !== ".jpeg") continue
+
+						// Skip non-screenshot images
+						const lowerName = file.toLowerCase()
+						if (
+							!lowerName.includes("screenshot") &&
+							!lowerName.includes("snip") &&
+							!lowerName.includes("capture")
+						) {
+							// Allow any image in Screenshots folder
+							if (!dir.includes("Screenshots")) continue
+						}
+
+						const filePath = path.join(dir, file)
+						const stats = fs.statSync(filePath)
+
+						// Only consider files modified in the last hour
+						const oneHourAgo = Date.now() - 60 * 60 * 1000
+						if (stats.mtimeMs > mostRecentTime && stats.mtimeMs > oneHourAgo) {
+							mostRecentTime = stats.mtimeMs
+							mostRecentPath = filePath
+						}
+					}
+				} catch (err) {
+					// Ignore errors reading individual directories
+					this.outputChannel.appendLine(`[AgentManager] Error reading screenshot dir ${dir}: ${err}`)
+				}
+			}
+
+			if (mostRecentPath) {
+				this.outputChannel.appendLine(`[AgentManager] Found recent screenshot: ${mostRecentPath}`)
+			} else {
+				this.outputChannel.appendLine(`[AgentManager] No recent screenshots found`)
+			}
+
+			// Send the result back to webview
+			this.postMessage({
+				type: "agentManager.recentScreenshot",
+				path: mostRecentPath || null,
+			})
+		} catch (error) {
+			this.outputChannel.appendLine(`[AgentManager] Error finding recent screenshot: ${error}`)
+			this.postMessage({
+				type: "agentManager.recentScreenshot",
+				path: null,
+				error: error instanceof Error ? error.message : "Unknown error",
+			})
+		}
 	}
 
 	/**

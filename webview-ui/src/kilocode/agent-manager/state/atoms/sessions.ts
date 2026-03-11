@@ -66,8 +66,23 @@ export const startSessionFailedCounterAtom = atom(0)
 // Per-session input value for the chat input field
 export const sessionInputAtomFamily = atomFamily((_sessionId: string) => atom(""))
 
-// Per-session images (data URLs) for the chat input field
-export const sessionImagesAtomFamily = atomFamily((_sessionId: string) => atom<string[]>([]))
+/**
+ * Represents an image attachment with its data and metadata.
+ * Used to preserve file paths for MCP tool access.
+ */
+export interface ImageAttachment {
+	/** Base64 data URL of the image */
+	dataUrl: string
+	/** Original file path if available (may be undefined for clipboard paste) */
+	filePath?: string
+	/** Source of the image attachment */
+	source: "drag" | "file-browser" | "clipboard" | "snipping-tool"
+	/** Timestamp when the image was attached */
+	timestamp: number
+}
+
+// Per-session images for the chat input field
+export const sessionImagesAtomFamily = atomFamily((_sessionId: string) => atom<ImageAttachment[]>([]))
 
 // Maximum images per message (limited to fit in the input field UI)
 export const MAX_IMAGES_PER_MESSAGE = 4

@@ -109,6 +109,7 @@ export enum ContextMenuOptionType {
 	Image = "image", // kilocode_change
 	Command = "command", // Add command type
 	SectionHeader = "sectionHeader", // Add section header type
+	Skill = "skill", // Add skill type for skills in slash commands
 }
 
 export interface ContextMenuQueryItem {
@@ -366,11 +367,19 @@ export function getContextMenuOptions(
 	return deduped.length > 0 ? deduped : [{ type: ContextMenuOptionType.NoResults }]
 }
 
-export function shouldShowContextMenu(text: string, position: number): boolean {
+export function shouldShowContextMenu(text: string, position: number, allowSlashAnywhere: boolean = true): boolean {
 	const beforeCursor = text.slice(0, position)
 
 	// Check if we're in a slash command context (at the beginning and no space yet)
-	if (text.startsWith("/") && !text.includes(" ") && position <= text.length) {
+	// OR allow triggering anywhere in text if allowSlashAnywhere is true
+	const isSlashAtStart = text.startsWith("/") && !text.includes(" ") && position <= text.length
+	const hasSlashAnywhere =
+		allowSlashAnywhere &&
+		beforeCursor.includes("/") &&
+		!beforeCursor.includes(" ") &&
+		beforeCursor.lastIndexOf("/") > 0
+
+	if (isSlashAtStart || hasSlashAnywhere) {
 		return true
 	}
 

@@ -1,5 +1,6 @@
 import { atom } from "jotai"
 import { atomFamily } from "jotai/utils"
+import { ImageAttachment } from "./sessions"
 
 /**
  * Generate a random UUID using native crypto.randomUUID().
@@ -11,7 +12,7 @@ export interface QueuedMessage {
 	id: string
 	sessionId: string
 	content: string
-	images?: string[] // Data URLs of pasted images
+	images?: ImageAttachment[] // Data URLs and file paths of attached images
 	status: "queued" | "sending" | "sent" | "failed"
 	timestamp: number
 	error?: string
@@ -44,7 +45,7 @@ export const nextQueuedMessageAtomFamily = atomFamily((sessionId: string) =>
 // Action: Add message to queue
 export const addToQueueAtom = atom(
 	null,
-	(get, set, payload: { sessionId: string; content: string; images?: string[] }) => {
+	(get, set, payload: { sessionId: string; content: string; images?: ImageAttachment[] }) => {
 		const { sessionId, content, images } = payload
 		const queue = get(sessionMessageQueueAtomFamily(sessionId))
 

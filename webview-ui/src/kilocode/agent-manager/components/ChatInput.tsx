@@ -77,17 +77,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 	// Note: Users CAN send messages to completed sessions (to resume them)
 	const sendDisabled = isEmpty
 
-	// Use shared hook for image paste and file selection handling
-	const { handlePaste, handleFileSelect, openFileBrowser, removeImage, canAddMore, fileInputRef, acceptedMimeTypes } =
-		useImagePaste({
-			selectedImages,
-			setSelectedImages,
-		})
+	// Use shared hook for image paste, drag/drop, and file selection handling
+	const {
+		handlePaste,
+		handleDrop,
+		handleFileSelect,
+		openFileBrowser,
+		removeImage,
+		canAddMore,
+		fileInputRef,
+		acceptedMimeTypes,
+	} = useImagePaste({
+		selectedImages,
+		setSelectedImages,
+	})
 
 	const handleSend = () => {
 		if (isEmpty) return
 
-		// Prepare images array (only include if there are images)
+		// Prepare images array - now includes file paths for MCP tool access
+		// Convert ImageAttachment objects to include both dataUrl and filePath
 		const images = hasImages ? selectedImages : undefined
 
 		if (isSessionCompleted) {
@@ -97,7 +106,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 				sessionId,
 				sessionLabel,
 				content: trimmedMessage || "", // Can be empty if only images
-				images,
+				images, // Now includes { dataUrl, filePath, source }
 			})
 			setMessageText("")
 			setSelectedImages([])
@@ -113,7 +122,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 					messageId: queuedMsg.id,
 					sessionLabel,
 					content: trimmedMessage || "",
-					images,
+					images, // Now includes { dataUrl, filePath, source }
 				})
 
 				setMessageText("")
@@ -211,6 +220,8 @@ If any step fails, ask the user for help.`
 
 	const hasTodos = todoStats.totalCount > 0
 
+	const [isDraggingOver, setIsDraggingOver] = useState(false)
+
 	return (
 		<div className="am-chat-input-container">
 			{/* Unified wrapper - handles border and focus state for textarea + toolbar */}
@@ -221,7 +232,14 @@ If any step fails, ask the user for help.`
 					isFocused
 						? "border-vscode-focusBorder outline outline-vscode-focusBorder"
 						: "border-vscode-input-border",
-				)}>
+					isDraggingOver && "border-2 border-dashed border-vscode-focusBorder",
+				)}
+				onDrop={handleDrop}
+				onDragOver={(e) => {
+					e.preventDefault()
+					setIsDraggingOver(true)
+				}}
+				onDragLeave={() => setIsDraggingOver(false)}>
 				{/* Todo list above input */}
 				{hasTodos && <AgentTodoList stats={todoStats} isIntegrated />}
 				<div className={cn("relative", "flex-1", "flex", "flex-col", "min-h-0", "overflow-visible")}>
@@ -269,7 +287,13 @@ If any step fails, ask the user for help.`
 							{selectedImages.length > 0 && (
 								<div className="flex items-center gap-1.5 flex-shrink-0">
 									{selectedImages.map((image, index) => (
-										<ImageThumbnail key={index} src={image} index={index} onRemove={removeImage} />
+										<ImageThumbnail
+											key={index}
+											src={image.dataUrl}
+											filePath={image.filePath}
+											index={index}
+											onRemove={removeImage}
+										/>
 									))}
 								</div>
 							)}
