@@ -11,7 +11,6 @@ import { ContextProxy } from "../../config/ContextProxy"
 
 const shownNativeNotificationIds = new Set<string>()
 
-// kilocode_change start: Hardcoded permanent notification for new extension
 export const PERMANENT_NOTIFICATION_ID = "kilo-new-extension-beta-march-11"
 
 export const PERMANENT_NOTIFICATION: KilocodeNotification = {
@@ -25,7 +24,6 @@ export const PERMANENT_NOTIFICATION: KilocodeNotification = {
 	},
 	showIn: ["extension"],
 }
-// kilocode_change end
 
 /**
  * Replaces vscode:// protocol in URLs with the appropriate protocol for the current IDE.
@@ -238,12 +236,10 @@ export const fetchKilocodeNotificationsHandler = async (provider: ClineProvider)
 		const kilocodeToken = apiConfiguration?.kilocodeToken
 
 		if (!kilocodeToken || apiConfiguration?.apiProvider !== "kilocode") {
-			// kilocode_change start: Always include permanent notification even without auth
 			provider.postMessageToWebview({
 				type: "kilocodeNotificationsResponse",
 				notifications: [PERMANENT_NOTIFICATION],
 			})
-			// kilocode_change end
 			return
 		}
 
@@ -254,10 +250,8 @@ export const fetchKilocodeNotificationsHandler = async (provider: ClineProvider)
 			provider.log.bind(provider),
 		)
 
-		// kilocode_change start: Prepend permanent notification, ensuring no duplicates
 		const filteredNotifications = notifications.filter((n) => n.id !== PERMANENT_NOTIFICATION_ID)
 		const allNotifications = [PERMANENT_NOTIFICATION, ...filteredNotifications]
-		// kilocode_change end
 
 		provider.postMessageToWebview({
 			type: "kilocodeNotificationsResponse",
@@ -267,12 +261,10 @@ export const fetchKilocodeNotificationsHandler = async (provider: ClineProvider)
 		await displayNativeNotifications(nativeNotifications, provider.log.bind(provider))
 	} catch (error: any) {
 		provider.log(`Error fetching Kilocode notifications: ${error.message}`)
-		// kilocode_change start: Always include permanent notification even on error
 		provider.postMessageToWebview({
 			type: "kilocodeNotificationsResponse",
 			notifications: [PERMANENT_NOTIFICATION],
 		})
-		// kilocode_change end
 	}
 }
 
