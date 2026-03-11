@@ -1608,9 +1608,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		<div
 			data-testid="chat-view"
 			className={
-				isHidden
-					? "hidden"
-					: "fixed top-0 left-0 right-0 max-w-5xl mx-auto bottom-0 flex flex-col overflow-hidden" // kilocode_change; add max-w-5xl
+				isHidden ? "hidden" : "fixed top-0 left-0 right-0 mx-auto bottom-0 flex flex-col overflow-hidden" // kilocode_change; removed max-w-5xl to fill sidebar width
 			}>
 			{(showAnnouncement || showAnnouncementModal) && (
 				<Announcement
