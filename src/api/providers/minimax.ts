@@ -286,17 +286,25 @@ export class MiniMaxHandler extends BaseProvider implements SingleCompletionHand
 		const id = modelId && modelId in minimaxModels ? (modelId as MinimaxModelId) : minimaxDefaultModelId
 		const info = minimaxModels[id]
 
+		// kilocode_change start: Force enable image support for MiniMax models
+		// MiniMax models support images but the model info may not have supportsImages set
+		const infoWithImages = {
+			...info,
+			supportsImages: true,
+		}
+		// kilocode_change end
+
 		const params = getModelParams({
 			format: "anthropic",
 			modelId: id,
-			model: info,
+			model: infoWithImages,
 			settings: this.options,
 			defaultTemperature: 1.0,
 		})
 
 		return {
 			id,
-			info,
+			info: infoWithImages,
 			...params,
 		}
 	}
