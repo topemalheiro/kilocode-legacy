@@ -11,7 +11,7 @@ export const minimaxModels = {
 	"MiniMax-M2": {
 		maxTokens: 16_384,
 		contextWindow: 192_000,
-		supportsImages: false,
+		supportsImages: true, // kilocode_change: MiniMax supports images
 		supportsPromptCache: true,
 		supportsNativeTools: true,
 		defaultToolProtocol: "native",
@@ -28,7 +28,7 @@ export const minimaxModels = {
 	"MiniMax-M2-Stable": {
 		maxTokens: 16_384,
 		contextWindow: 192_000,
-		supportsImages: false,
+		supportsImages: true, // kilocode_change: MiniMax supports images
 		supportsPromptCache: true,
 		supportsNativeTools: true,
 		defaultToolProtocol: "native",
@@ -45,7 +45,7 @@ export const minimaxModels = {
 	"MiniMax-M2.1": {
 		maxTokens: 16_384,
 		contextWindow: 192_000,
-		supportsImages: false,
+		supportsImages: true, // kilocode_change: MiniMax supports images
 		supportsPromptCache: true,
 		supportsNativeTools: true,
 		defaultToolProtocol: "native",
@@ -62,7 +62,7 @@ export const minimaxModels = {
 	"MiniMax-M2.1-highspeed": {
 		maxTokens: 16_384,
 		contextWindow: 192_000,
-		supportsImages: false,
+		supportsImages: true, // kilocode_change: MiniMax supports images
 		supportsPromptCache: true,
 		supportsNativeTools: true,
 		defaultToolProtocol: "native",
@@ -79,7 +79,7 @@ export const minimaxModels = {
 	"MiniMax-M2.5": {
 		maxTokens: 16_384,
 		contextWindow: 192_000,
-		supportsImages: false,
+		supportsImages: true, // kilocode_change: MiniMax supports images
 		supportsPromptCache: true,
 		supportsNativeTools: true,
 		defaultToolProtocol: "native",
@@ -96,7 +96,7 @@ export const minimaxModels = {
 	"MiniMax-M2.5-highspeed": {
 		maxTokens: 16_384,
 		contextWindow: 192_000,
-		supportsImages: false,
+		supportsImages: true, // kilocode_change: MiniMax supports images
 		supportsPromptCache: true,
 		supportsNativeTools: true,
 		defaultToolProtocol: "native",
