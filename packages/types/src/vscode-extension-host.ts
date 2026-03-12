@@ -572,6 +572,7 @@ export type ExtensionState = Pick<
 	| "openRouterImageGenerationSelectedModel"
 	| "includeTaskHistoryInEnhance"
 	| "reasoningBlockCollapsed"
+	| "autoExpandSubsequentThinking" // kilocode_change
 	| "enterBehavior"
 	| "includeCurrentTime"
 	| "includeCurrentCost"
@@ -890,6 +891,7 @@ export interface WebviewMessage {
 		| "getKeybindings" // kilocode_change
 		| "setHistoryPreviewCollapsed" // kilocode_change
 		| "setReasoningBlockCollapsed" // kilocode_change
+		| "setAutoExpandSubsequentThinking" // kilocode_change
 		| "openExternal"
 		| "openInBrowser" // kilocode_change
 		| "filterMarketplaceItems"

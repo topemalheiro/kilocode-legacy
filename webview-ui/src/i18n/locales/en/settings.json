@@ -78,6 +78,10 @@
 			"label": "Collapse Thinking messages by default",
 			"description": "When enabled, thinking blocks will be collapsed by default until you interact with them"
 		},
+		"autoExpandSubsequentThinking": {
+			"label": "Sync subsequent thinking blocks",
+			"description": "When enabled, expanding or collapsing one thinking block will apply to all subsequent thinking blocks"
+		},
 		"requireCtrlEnterToSend": {
 			"label": "Require {{primaryMod}}+Enter to send messages",
 			"description": "When enabled, you must press {{primaryMod}}+Enter to send messages instead of just Enter"

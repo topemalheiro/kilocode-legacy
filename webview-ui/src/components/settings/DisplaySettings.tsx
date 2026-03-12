@@ -18,11 +18,13 @@ type DisplaySettingsProps = HTMLAttributes<HTMLDivElement> & {
 	showTimestamps?: boolean
 	showDiffStats?: boolean // kilocode_change
 	reasoningBlockCollapsed: boolean
+	autoExpandSubsequentThinking?: boolean // kilocode_change
 	setCachedStateField: SetCachedStateField<
 		| "showTaskTimeline"
 		| "sendMessageOnEnter"
 		| "ghostServiceSettings"
 		| "reasoningBlockCollapsed"
+		| "autoExpandSubsequentThinking" // kilocode_change
 		| "hideCostBelowThreshold"
 		| "showTimestamps"
 		| "showDiffStats"
@@ -37,6 +39,7 @@ export const DisplaySettings = ({
 	sendMessageOnEnter,
 	setCachedStateField,
 	reasoningBlockCollapsed,
+	autoExpandSubsequentThinking, // kilocode_change
 	hideCostBelowThreshold,
 	...props
 }: DisplaySettingsProps) => {
@@ -74,6 +77,21 @@ export const DisplaySettings = ({
 						{t("settings:ui.collapseThinking.description")}
 					</div>
 				</div>
+				{/* kilocode_change start - Sync thinking blocks */}
+				<div className="flex flex-col gap-1 mt-3">
+					<VSCodeCheckbox
+						checked={autoExpandSubsequentThinking}
+						onChange={(e: any) => {
+							setCachedStateField("autoExpandSubsequentThinking", e.target.checked)
+						}}
+						data-testid="auto-expand-subsequent-thinking-checkbox">
+						<span className="font-medium">{t("settings:ui.autoExpandSubsequentThinking.label")}</span>
+					</VSCodeCheckbox>
+					<div className="text-vscode-descriptionForeground text-sm ml-5 mt-1">
+						{t("settings:ui.autoExpandSubsequentThinking.description")}
+					</div>
+				</div>
+				{/* kilocode_change end */}
 				<div>
 					<VSCodeCheckbox
 						checked={showTaskTimeline}
