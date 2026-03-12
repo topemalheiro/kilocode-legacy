@@ -14,7 +14,7 @@ interface ImageThumbnailProps {
  * Reusable image thumbnail component with remove button on hover.
  * Used in ChatInput and NewAgentForm for displaying pasted images.
  */
-export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({ src, filePath, index, onRemove }) => {
+export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({ src, filePath: _filePath, index, onRemove }) => {
 	const { t } = useTranslation("agentManager")
 
 	return (

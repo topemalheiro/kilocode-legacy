@@ -35,6 +35,8 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 		setAlwaysAllowFollowupQuestions,
 		setAllowedMaxRequests, // kilocode_change
 		setAllowedMaxCost, // kilocode_change
+		yoloMode, // kilocode_change
+		setYoloMode, // kilocode_change
 	} = useExtensionState()
 
 	const { t } = useAppTranslation()
@@ -215,6 +217,44 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 						/>
 					</StandardTooltip>
 				</div>
+				{/* kilocode_change start: YOLO mode toggle */}
+				<div onClick={(e) => e.stopPropagation()}>
+					<StandardTooltip content={t("chat:autoApprove.yoloModeTooltip")}>
+						<button
+							style={{
+								background: "none",
+								border: "none",
+								cursor: "pointer",
+								padding: "2px 6px",
+								borderRadius: "4px",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								color: yoloMode ? "#f59e0b" : "var(--vscode-descriptionForeground)",
+								backgroundColor: yoloMode
+									? "color-mix(in srgb, #f59e0b 20%, transparent)"
+									: "transparent",
+								transition: "all 0.2s ease",
+							}}
+							aria-label={yoloMode ? t("chat:autoApprove.yoloModeOn") : t("chat:autoApprove.yoloModeOff")}
+							onClick={() => {
+								const newValue = !yoloMode
+								setYoloMode(newValue)
+								vscode.postMessage({
+									type: "updateSettings",
+									updatedSettings: { yoloMode: newValue },
+								})
+							}}>
+							<span
+								className="codicon codicon-zap"
+								style={{
+									fontSize: "16px",
+								}}
+							/>
+						</button>
+					</StandardTooltip>
+				</div>
+				{/* kilocode_change end */}
 				<div
 					style={{
 						display: "flex",

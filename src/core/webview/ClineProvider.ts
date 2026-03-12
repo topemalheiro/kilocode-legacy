@@ -1948,14 +1948,17 @@ export class ClineProvider
 		throw new Error("Task not found")
 	}
 
-	async getTaskWithAggregatedCosts(taskId: string): Promise<{
+	async getTaskWithAggregatedCosts(
+		taskId: string,
+		kilo_withMessage = true, // kilocode_change: allow suppressing error messages
+	): Promise<{
 		historyItem: HistoryItem
 		aggregatedCosts: AggregatedCosts
 	}> {
-		const { historyItem } = await this.getTaskWithId(taskId)
+		const { historyItem } = await this.getTaskWithId(taskId, kilo_withMessage)
 
 		const aggregatedCosts = await aggregateTaskCostsRecursive(taskId, async (id: string) => {
-			const result = await this.getTaskWithId(id)
+			const result = await this.getTaskWithId(id, kilo_withMessage)
 			return result.historyItem
 		})
 

@@ -343,7 +343,10 @@
 		"triggerLabel_zero": "0 auto-approve",
 		"triggerLabel_one": "1 auto-approved",
 		"triggerLabel_other": "{{count}} auto-approved",
-		"triggerLabelAll": "BRRR"
+		"triggerLabelAll": "BRRR",
+		"yoloModeTooltip": "YOLO mode: Auto-approve everything including follow-up options",
+		"yoloModeOn": "YOLO mode enabled",
+		"yoloModeOff": "YOLO mode disabled"
 	},
 	"announcement": {
 		"title": "Kilo Code {{version}} Released",

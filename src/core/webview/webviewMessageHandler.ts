@@ -848,7 +848,8 @@ export const webviewMessageHandler = async (
 				if (!taskId) {
 					throw new Error("Task ID is required")
 				}
-				const result = await provider.getTaskWithAggregatedCosts(taskId)
+				// Pass false to suppress error popup - we handle errors gracefully
+				const result = await provider.getTaskWithAggregatedCosts(taskId, false)
 				await provider.postMessageToWebview({
 					type: "taskWithAggregatedCosts",
 					// IMPORTANT: ChatView stores aggregatedCostsMap keyed by message.text (taskId)
@@ -858,12 +859,16 @@ export const webviewMessageHandler = async (
 					aggregatedCosts: result.aggregatedCosts,
 				})
 			} catch (error) {
-				console.error("Error getting task with aggregated costs:", error)
+				// Don't show error popup for missing tasks - just log and send empty result
+				console.warn(
+					"[getTaskWithAggregatedCosts] Task not found:",
+					error instanceof Error ? error.message : String(error),
+				)
 				await provider.postMessageToWebview({
 					type: "taskWithAggregatedCosts",
 					// Include taskId when available for correlation in UI logs.
 					text: message.text,
-					error: error instanceof Error ? error.message : String(error),
+					error: "Task not found",
 				})
 			}
 			break

@@ -149,7 +149,7 @@ const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
 				className="bg-[var(--vscode-dropdown-background)] border border-[var(--vscode-editorGroup-border)] rounded-[3px] shadow-[0_4px_10px_rgba(0,0,0,0.25)] flex flex-col max-h-[200px] overflow-y-auto" // Corrected rounded and shadow
 			>
 				{flattenedItems.length > 0 ? (
-					flattenedItems.map((item, index) => {
+					flattenedItems.map((item, _index) => {
 						// Header item
 						if ("type" in item && item.type === "header") {
 							return (

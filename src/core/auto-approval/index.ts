@@ -28,6 +28,7 @@ export type AutoApprovalState =
 // Some of these actions have additional settings associated with them.
 export type AutoApprovalStateOptions =
 	| "autoApprovalEnabled"
+	| "yoloMode" // kilocode_change
 	| "alwaysAllowReadOnlyOutsideWorkspace" // For `alwaysAllowReadOnly`.
 	| "alwaysAllowWriteOutsideWorkspace" // For `alwaysAllowWrite`.
 	| "alwaysAllowWriteProtected"
@@ -35,6 +36,7 @@ export type AutoApprovalStateOptions =
 	| "mcpServers" // For `alwaysAllowMcp`.
 	| "allowedCommands" // For `alwaysAllowExecute`.
 	| "deniedCommands"
+	| "alwaysAllowAllCommands" // kilocode_change: bypass allowedCommands check
 
 export type CheckAutoApprovalResult =
 	| { decision: "approve" }
@@ -60,6 +62,12 @@ export async function checkAutoApproval({
 	if (isNonBlockingAsk(ask)) {
 		return { decision: "approve" }
 	}
+
+	// kilocode_change start: YOLO mode - approve everything
+	if (state?.yoloMode) {
+		return { decision: "approve" }
+	}
+	// kilocode_change end
 
 	if (!state || !state.autoApprovalEnabled) {
 		return { decision: "ask" }
@@ -123,6 +131,17 @@ export async function checkAutoApproval({
 		}
 
 		if (state.alwaysAllowExecute === true) {
+			// kilocode_change start: alwaysAllowAllCommands - bypass allowedCommands check, only check deniedCommands
+			if (state.alwaysAllowAllCommands === true) {
+				// Only check deniedCommands, approve everything else
+				const decision = getCommandDecision(text, ["*"], state.deniedCommands || [])
+				if (decision === "auto_deny") {
+					return { decision: "deny" }
+				}
+				return { decision: "approve" }
+			}
+			// kilocode_change end
+
 			const decision = getCommandDecision(text, state.allowedCommands || [], state.deniedCommands || [])
 
 			if (decision === "auto_approve") {

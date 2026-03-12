@@ -505,6 +505,7 @@ export type ExtensionState = Pick<
 	| "followupAutoApproveTimeoutMs"
 	| "allowedCommands"
 	| "deniedCommands"
+	| "alwaysAllowAllCommands" // kilocode_change
 	| "allowedMaxRequests"
 	| "allowedMaxCost"
 	| "browserToolEnabled"
