@@ -42,6 +42,7 @@ import BrowserActionRow from "./BrowserActionRow"
 import BrowserSessionStatusRow from "./BrowserSessionStatusRow"
 import ChatRow from "./ChatRow"
 import { ChatTextArea } from "./ChatTextArea"
+import { ThinkingBlockSyncProvider } from "@src/context/ThinkingBlockSyncContext"
 // import TaskHeader from "./TaskHeader"// kilocode_change
 import KiloTaskHeader from "../kilocode/KiloTaskHeader" // kilocode_change
 import AutoApproveMenu from "./AutoApproveMenu"
@@ -131,6 +132,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		messageQueue = [],
 		sendMessageOnEnter, // kilocode_change
 		isBrowserSessionActive,
+		autoExpandSubsequentThinking, // kilocode_change: for thinking blocks sync
 	} = useExtensionState()
 
 	const messagesRef = useRef(messages)
@@ -1783,22 +1785,24 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				<>
 					<div className="grow flex flex-col min-h-0" ref={scrollContainerRef}>
 						<div className="flex-auto min-h-0">
-							<Virtuoso
-								ref={virtuosoRef}
-								key={task.ts}
-								className="scrollable grow overflow-y-scroll mb-1"
-								increaseViewportBy={{ top: 400, bottom: 400 }} // kilocode_change: use more modest numbers to see if they reduce gray screen incidence
-								data={groupedMessages}
-								itemContent={itemContent}
-								followOutput={(isAtBottom: boolean) => isAtBottom || stickyFollowRef.current}
-								atBottomStateChange={(isAtBottom: boolean) => {
-									setIsAtBottom(isAtBottom)
-									// Only show the scroll-to-bottom button if not at bottom
-									setShowScrollToBottom(!isAtBottom)
-								}}
-								atBottomThreshold={10}
-								initialTopMostItemIndex={groupedMessages.length - 1}
-							/>
+							<ThinkingBlockSyncProvider syncEnabled={autoExpandSubsequentThinking ?? false}>
+								<Virtuoso
+									ref={virtuosoRef}
+									key={task.ts}
+									className="scrollable grow overflow-y-scroll mb-1"
+									increaseViewportBy={{ top: 400, bottom: 400 }} // kilocode_change: use more modest numbers to see if they reduce gray screen incidence
+									data={groupedMessages}
+									itemContent={itemContent}
+									followOutput={(isAtBottom: boolean) => isAtBottom || stickyFollowRef.current}
+									atBottomStateChange={(isAtBottom: boolean) => {
+										setIsAtBottom(isAtBottom)
+										// Only show the scroll-to-bottom button if not at bottom
+										setShowScrollToBottom(!isAtBottom)
+									}}
+									atBottomThreshold={10}
+									initialTopMostItemIndex={groupedMessages.length - 1}
+								/>
+							</ThinkingBlockSyncProvider>
 						</div>
 					</div>
 					<div className={`flex-initial min-h-0 ${!areButtonsVisible ? "mb-1" : ""}`}>

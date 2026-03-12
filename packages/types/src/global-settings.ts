@@ -75,6 +75,7 @@ export const globalSettingsSchema = z.object({
 	autoApprovalEnabled: z.boolean().optional(),
 	yoloMode: z.boolean().optional(), // kilocode_change
 	yoloGatekeeperApiConfigId: z.string().optional(), // kilocode_change: AI gatekeeper for YOLO mode
+	alwaysAllowAllCommands: z.boolean().optional(), // kilocode_change: bypass allowedCommands list
 	alwaysAllowReadOnly: z.boolean().optional(),
 	alwaysAllowReadOnlyOutsideWorkspace: z.boolean().optional(),
 	alwaysAllowWrite: z.boolean().optional(),
@@ -92,7 +93,6 @@ export const globalSettingsSchema = z.object({
 	followupAutoApproveTimeoutMs: z.number().optional(),
 	allowedCommands: z.array(z.string()).optional(),
 	deniedCommands: z.array(z.string()).optional(),
-	alwaysAllowAllCommands: z.boolean().optional(), // kilocode_change: bypass allowedCommands check, only check deniedCommands
 	commandExecutionTimeout: z.number().optional(),
 	commandTimeoutAllowlist: z.array(z.string()).optional(),
 	preventCompletionWithOpenTodos: z.boolean().optional(),
@@ -237,6 +237,7 @@ export const globalSettingsSchema = z.object({
 	includeTaskHistoryInEnhance: z.boolean().optional(),
 	historyPreviewCollapsed: z.boolean().optional(),
 	reasoningBlockCollapsed: z.boolean().optional(),
+	autoExpandSubsequentThinking: z.boolean().optional(), // kilocode_change: Sync thinking blocks expansion state
 	/**
 	 * Controls the keyboard behavior for sending messages in the chat input.
 	 * - "send": Enter sends message, Shift+Enter creates newline (default)

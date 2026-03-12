@@ -39,6 +39,7 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	yoloMode?: boolean // kilocode_change
 	yoloGatekeeperApiConfigId?: string // kilocode_change: AI gatekeeper for YOLO mode
 	deniedCommands?: string[]
+	alwaysAllowAllCommands?: boolean // kilocode_change: bypass allowedCommands list
 	setCachedStateField: SetCachedStateField<
 		| "alwaysAllowReadOnly"
 		| "alwaysAllowReadOnlyOutsideWorkspace"
@@ -60,6 +61,7 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "yoloMode" // kilocode_change
 		| "yoloGatekeeperApiConfigId" // kilocode_change: AI gatekeeper for YOLO mode
 		| "deniedCommands"
+		| "alwaysAllowAllCommands" // kilocode_change
 	>
 }
 
@@ -84,6 +86,7 @@ export const AutoApproveSettings = ({
 	yoloMode, // kilocode_change
 	yoloGatekeeperApiConfigId, // kilocode_change: AI gatekeeper for YOLO mode
 	deniedCommands,
+	alwaysAllowAllCommands, // kilocode_change
 	setCachedStateField,
 	...props
 }: AutoApproveSettingsProps) => {
@@ -210,6 +213,28 @@ export const AutoApproveSettings = ({
 						onMaxRequestsChange={(value) => setCachedStateField("allowedMaxRequests", value)}
 						onMaxCostChange={(value) => setCachedStateField("allowedMaxCost", value)}
 					/>
+
+					{/* kilocode_change start: alwaysAllowAllCommands toggle - works when alwaysAllowExecute is OFF */}
+					<SearchableSetting
+						settingId="auto-approve-always-allow-all-commands"
+						section="autoApprove"
+						label={t("settings:autoApprove.execute.alwaysAllowAllCommands")}>
+						<VSCodeCheckbox
+							checked={alwaysAllowAllCommands ?? false}
+							onChange={(e: any) => {
+								setCachedStateField("alwaysAllowAllCommands", e.target.checked)
+								vscode.postMessage({ type: "alwaysAllowAllCommands", bool: e.target.checked })
+							}}
+							data-testid="always-allow-all-commands-checkbox">
+							<span className="font-medium">
+								{t("settings:autoApprove.execute.alwaysAllowAllCommands")}
+							</span>
+						</VSCodeCheckbox>
+						<div className="text-vscode-descriptionForeground text-sm mt-1">
+							{t("settings:autoApprove.execute.alwaysAllowAllCommandsDescription")}
+						</div>
+					</SearchableSetting>
+					{/* kilocode_change end */}
 				</div>
 
 				{/* ADDITIONAL SETTINGS */}

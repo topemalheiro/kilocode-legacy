@@ -224,6 +224,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 		maxReadFileLine,
 		showAutoApproveMenu, // kilocode_change
 		yoloMode, // kilocode_change
+		alwaysAllowAllCommands, // kilocode_change
 		showTaskTimeline, // kilocode_change
 		sendMessageOnEnter, // kilocode_change
 		showTimestamps, // kilocode_change
@@ -260,6 +261,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 		kiloCodeImageApiKey,
 		openRouterImageGenerationSelectedModel,
 		reasoningBlockCollapsed,
+		autoExpandSubsequentThinking, // kilocode_change
 		enterBehavior,
 		includeCurrentTime,
 		includeCurrentCost,
@@ -613,6 +615,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 			vscode.postMessage({ type: "terminalCommandApiConfigId", text: terminalCommandApiConfigId || "" }) // kilocode_change
 			vscode.postMessage({ type: "showAutoApproveMenu", bool: showAutoApproveMenu }) // kilocode_change
 			vscode.postMessage({ type: "yoloMode", bool: yoloMode }) // kilocode_change
+			vscode.postMessage({ type: "alwaysAllowAllCommands", bool: alwaysAllowAllCommands }) // kilocode_change
 			vscode.postMessage({ type: "allowVeryLargeReads", bool: allowVeryLargeReads }) // kilocode_change
 			vscode.postMessage({ type: "currentApiConfigName", text: currentApiConfigName })
 			vscode.postMessage({ type: "showTaskTimeline", bool: showTaskTimeline }) // kilocode_change
@@ -623,6 +626,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 			vscode.postMessage({ type: "updateCondensingPrompt", text: customCondensingPrompt || "" })
 			vscode.postMessage({ type: "yoloGatekeeperApiConfigId", text: yoloGatekeeperApiConfigId || "" }) // kilocode_change: AI gatekeeper for YOLO mode
 			vscode.postMessage({ type: "setReasoningBlockCollapsed", bool: reasoningBlockCollapsed ?? true })
+			vscode.postMessage({ type: "setAutoExpandSubsequentThinking", bool: autoExpandSubsequentThinking ?? false })
 			vscode.postMessage({ type: "upsertApiConfiguration", text: editingApiConfigName, apiConfiguration }) // kilocode_change: Save to editing profile instead of current active profile
 			vscode.postMessage({ type: "telemetrySetting", text: telemetrySetting })
 			vscode.postMessage({ type: "systemNotificationsEnabled", bool: systemNotificationsEnabled }) // kilocode_change
@@ -1115,6 +1119,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 								showAutoApproveMenu={showAutoApproveMenu} // kilocode_change
 								yoloMode={yoloMode} // kilocode_change
 								yoloGatekeeperApiConfigId={yoloGatekeeperApiConfigId} // kilocode_change: AI gatekeeper for YOLO mode
+								alwaysAllowAllCommands={alwaysAllowAllCommands} // kilocode_change
 								alwaysAllowReadOnly={alwaysAllowReadOnly}
 								alwaysAllowReadOnlyOutsideWorkspace={alwaysAllowReadOnlyOutsideWorkspace}
 								alwaysAllowWrite={alwaysAllowWrite}
@@ -1175,6 +1180,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 						{activeTab === "display" && (
 							<DisplaySettings
 								reasoningBlockCollapsed={reasoningBlockCollapsed ?? true}
+								autoExpandSubsequentThinking={autoExpandSubsequentThinking ?? false} // kilocode_change
 								showTaskTimeline={showTaskTimeline}
 								sendMessageOnEnter={sendMessageOnEnter}
 								showTimestamps={cachedState.showTimestamps} // kilocode_change

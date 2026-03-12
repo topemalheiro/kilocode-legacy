@@ -47,6 +47,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	setShowDiffStats: (value: boolean) => void // kilocode_change
 	hideCostBelowThreshold?: number // kilocode_change
 	setHideCostBelowThreshold: (value: number) => void // kilocode_change
+	autoExpandSubsequentThinking?: boolean // kilocode_change
+	setAutoExpandSubsequentThinking: (value: boolean) => void // kilocode_change
 	hoveringTaskTimeline?: boolean // kilocode_change
 	setHoveringTaskTimeline: (value: boolean) => void // kilocode_change
 	systemNotificationsEnabled?: boolean // kilocode_change
@@ -325,6 +327,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		showDiffStats: true, // kilocode_change
 		kilocodeDefaultModel: openRouterDefaultModelId,
 		reasoningBlockCollapsed: true, // Default to collapsed
+		autoExpandSubsequentThinking: false,
 		enterBehavior: "send", // Default: Enter sends, Shift+Enter creates newline
 		cloudUserInfo: null,
 		cloudIsAuthenticated: false,
@@ -727,6 +730,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 			setState((prevState) => ({ ...prevState, historyPreviewCollapsed: value })),
 		setReasoningBlockCollapsed: (value) =>
 			setState((prevState) => ({ ...prevState, reasoningBlockCollapsed: value })),
+		setAutoExpandSubsequentThinking: (value) =>
+			setState((prevState) => ({ ...prevState, autoExpandSubsequentThinking: value })), // kilocode_change
 		enterBehavior: state.enterBehavior ?? "send",
 		setEnterBehavior: (value) => setState((prevState) => ({ ...prevState, enterBehavior: value })),
 		setHasOpenedModeSelector: (value) => setState((prevState) => ({ ...prevState, hasOpenedModeSelector: value })),

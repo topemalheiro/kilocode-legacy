@@ -161,6 +161,7 @@ export interface ExtensionMessage {
 		| "systemPrompt"
 		| "autoApprovalEnabled"
 		| "yoloMode" // kilocode_change
+		| "alwaysAllowAllCommands" // kilocode_change
 		| "updateCustomMode"
 		| "deleteCustomMode"
 		| "exportModeResult"
@@ -572,6 +573,7 @@ export type ExtensionState = Pick<
 	| "openRouterImageGenerationSelectedModel"
 	| "includeTaskHistoryInEnhance"
 	| "reasoningBlockCollapsed"
+	| "autoExpandSubsequentThinking" // kilocode_change
 	| "enterBehavior"
 	| "includeCurrentTime"
 	| "includeCurrentCost"
@@ -813,6 +815,7 @@ export interface WebviewMessage {
 		| "snoozeAutocomplete" // kilocode_change
 		| "autoApprovalEnabled"
 		| "yoloMode" // kilocode_change
+		| "alwaysAllowAllCommands" // kilocode_change
 		| "updateCustomMode"
 		| "deleteCustomMode"
 		| "setopenAiCustomModelInfo"
@@ -890,6 +893,7 @@ export interface WebviewMessage {
 		| "getKeybindings" // kilocode_change
 		| "setHistoryPreviewCollapsed" // kilocode_change
 		| "setReasoningBlockCollapsed" // kilocode_change
+		| "setAutoExpandSubsequentThinking" // kilocode_change
 		| "openExternal"
 		| "openInBrowser" // kilocode_change
 		| "filterMarketplaceItems"

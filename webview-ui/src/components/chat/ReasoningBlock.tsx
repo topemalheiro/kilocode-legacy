@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useId } from "react"
 import { useTranslation } from "react-i18next"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
+import { useThinkingBlockSync } from "@src/context/ThinkingBlockSyncContext"
 
 import MarkdownBlock from "../common/MarkdownBlock"
 import { Lightbulb, ChevronUp } from "lucide-react"
@@ -11,22 +12,62 @@ interface ReasoningBlockProps {
 	ts: number
 	isStreaming: boolean
 	isLast: boolean
+	autoExpandSubsequentThinking?: boolean
 	metadata?: any
 }
 
-export const ReasoningBlock = ({ content, isStreaming, isLast }: ReasoningBlockProps) => {
+export const ReasoningBlock = ({ content, isStreaming, isLast, autoExpandSubsequentThinking }: ReasoningBlockProps) => {
 	const { t } = useTranslation()
 	const { reasoningBlockCollapsed } = useExtensionState()
+	const { syncEnabled, expandedState, setExpandedState, registerBlock, unregisterBlock } =
+		useThinkingBlockSync() ?? {}
 
-	const [isCollapsed, setIsCollapsed] = useState(reasoningBlockCollapsed)
+	const id = useId()
+
+	// When sync is enabled, use the sync state; otherwise use the normal collapsed state
+	const getInitialState = () => {
+		if (syncEnabled && expandedState !== null) {
+			// Sync is enabled and user has interacted - use sync state
+			return !expandedState // expandedState true means isCollapsed should be false
+		}
+		if (autoExpandSubsequentThinking) {
+			// Legacy: if autoExpandSubsequentThinking is true, start expanded
+			return false
+		}
+		// Default behavior
+		return reasoningBlockCollapsed
+	}
+
+	const [isCollapsed, setIsCollapsed] = useState(getInitialState)
+
+	// Register this block with the sync context
+	useEffect(() => {
+		if (syncEnabled && registerBlock && unregisterBlock) {
+			registerBlock(id, setIsCollapsed)
+			return () => {
+				unregisterBlock(id)
+			}
+		}
+	}, [syncEnabled, id, registerBlock, unregisterBlock])
+
+	// Sync with external state changes
+	useEffect(() => {
+		if (syncEnabled && expandedState !== null) {
+			// Sync is enabled and user has interacted - update local state
+			setIsCollapsed(!expandedState)
+		}
+	}, [syncEnabled, expandedState])
+
+	// Reset when global collapsed setting changes (only when not syncing)
+	useEffect(() => {
+		if (!syncEnabled) {
+			setIsCollapsed(reasoningBlockCollapsed)
+		}
+	}, [reasoningBlockCollapsed, syncEnabled])
 
 	const startTimeRef = useRef<number>(Date.now())
 	const [elapsed, setElapsed] = useState<number>(0)
 	const contentRef = useRef<HTMLDivElement>(null)
-
-	useEffect(() => {
-		setIsCollapsed(reasoningBlockCollapsed)
-	}, [reasoningBlockCollapsed])
 
 	useEffect(() => {
 		if (isLast && isStreaming) {
@@ -41,7 +82,15 @@ export const ReasoningBlock = ({ content, isStreaming, isLast }: ReasoningBlockP
 	const secondsLabel = t("chat:reasoning.seconds", { count: seconds })
 
 	const handleToggle = () => {
-		setIsCollapsed(!isCollapsed)
+		const newCollapsed = !isCollapsed
+		setIsCollapsed(newCollapsed)
+
+		// If sync is enabled, update the sync state
+		if (syncEnabled && setExpandedState) {
+			// If newCollapsed is true (collapsed), then expanded should be false
+			// If newCollapsed is false (expanded), then expanded should be true
+			setExpandedState(!newCollapsed)
+		}
 	}
 
 	return (

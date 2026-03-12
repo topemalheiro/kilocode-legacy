@@ -2317,6 +2317,7 @@ export class ClineProvider
 			openRouterImageGenerationSelectedModel,
 			featureRoomoteControlEnabled,
 			yoloMode, // kilocode_change
+			alwaysAllowAllCommands, // kilocode_change: bypass allowedCommands list check
 			yoloGatekeeperApiConfigId, // kilocode_change: AI gatekeeper for YOLO mode
 			selectedMicrophoneDevice, // kilocode_change: Selected microphone device for STT
 			isBrowserSessionActive,
@@ -2391,6 +2392,7 @@ export class ClineProvider
 			alwaysAllowSubtasks: alwaysAllowSubtasks ?? false,
 			isBrowserSessionActive,
 			yoloMode: yoloMode ?? false, // kilocode_change
+			alwaysAllowAllCommands: alwaysAllowAllCommands ?? false, // kilocode_change: bypass allowedCommands list check
 			allowedMaxRequests,
 			allowedMaxCost,
 			autoCondenseContext: autoCondenseContext ?? true,
@@ -2478,6 +2480,7 @@ export class ClineProvider
 			hasSystemPromptOverride,
 			historyPreviewCollapsed: historyPreviewCollapsed ?? false,
 			reasoningBlockCollapsed: reasoningBlockCollapsed ?? true,
+			autoExpandSubsequentThinking: false,
 			enterBehavior: enterBehavior ?? "send",
 			cloudUserInfo,
 			cloudIsAuthenticated: cloudIsAuthenticated ?? false,
@@ -2714,6 +2717,7 @@ export class ClineProvider
 			alwaysAllowFollowupQuestions: stateValues.alwaysAllowFollowupQuestions ?? false,
 			isBrowserSessionActive,
 			yoloMode: stateValues.yoloMode ?? false, // kilocode_change
+			alwaysAllowAllCommands: stateValues.alwaysAllowAllCommands ?? false, // kilocode_change: bypass allowedCommands list check
 			followupAutoApproveTimeoutMs: stateValues.followupAutoApproveTimeoutMs ?? 60000,
 			diagnosticsEnabled: stateValues.diagnosticsEnabled ?? true,
 			allowedMaxRequests: stateValues.allowedMaxRequests,
@@ -2802,6 +2806,7 @@ export class ClineProvider
 			fastApplyApiProvider: stateValues.fastApplyApiProvider ?? "current", // kilocode_change: Fast Apply model api config id
 			historyPreviewCollapsed: stateValues.historyPreviewCollapsed ?? false,
 			reasoningBlockCollapsed: stateValues.reasoningBlockCollapsed ?? true,
+			autoExpandSubsequentThinking: stateValues.autoExpandSubsequentThinking ?? false,
 			enterBehavior: stateValues.enterBehavior ?? "send",
 			cloudUserInfo,
 			cloudIsAuthenticated,

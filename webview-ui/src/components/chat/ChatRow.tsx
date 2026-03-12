@@ -204,8 +204,16 @@ export const ChatRowContent = ({
 	const { t, i18n } = useTranslation()
 
 	// kilocode_change: add showTimestamps
-	const { mcpServers, alwaysAllowMcp, currentCheckpoint, mode, apiConfiguration, clineMessages, showTimestamps } =
-		useExtensionState()
+	const {
+		mcpServers,
+		alwaysAllowMcp,
+		currentCheckpoint,
+		mode,
+		apiConfiguration,
+		clineMessages,
+		showTimestamps,
+		autoExpandSubsequentThinking,
+	} = useExtensionState()
 	const { info: model } = useSelectedModel(apiConfiguration)
 	const [isEditing, setIsEditing] = useState(false)
 	const [editedContent, setEditedContent] = useState("")
@@ -1180,6 +1188,7 @@ export const ChatRowContent = ({
 							ts={message.ts}
 							isStreaming={isStreaming}
 							isLast={isLast}
+							autoExpandSubsequentThinking={autoExpandSubsequentThinking}
 						/>
 					)
 				case "api_req_started":

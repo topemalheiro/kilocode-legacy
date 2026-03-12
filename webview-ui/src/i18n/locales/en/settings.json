@@ -78,6 +78,10 @@
 			"label": "Collapse Thinking messages by default",
 			"description": "When enabled, thinking blocks will be collapsed by default until you interact with them"
 		},
+		"autoExpandSubsequentThinking": {
+			"label": "Sync subsequent thinking blocks",
+			"description": "When enabled, expanding or collapsing one thinking block will automatically expand or collapse all subsequent blocks"
+		},
 		"requireCtrlEnterToSend": {
 			"label": "Require {{primaryMod}}+Enter to send messages",
 			"description": "When enabled, you must press {{primaryMod}}+Enter to send messages instead of just Enter"
@@ -265,7 +269,9 @@
 			"commandPlaceholder": "Enter command prefix (e.g., 'git ')",
 			"deniedCommandPlaceholder": "Enter command prefix to deny (e.g., 'rm -rf')",
 			"addButton": "Add",
-			"autoDenied": "Commands with the prefix `{{prefix}}` have been forbidden by the user. Do not bypass this restriction by running another command."
+			"autoDenied": "Commands with the prefix `{{prefix}}` have been forbidden by the user. Do not bypass this restriction by running another command.",
+			"alwaysAllowAllCommands": "Auto-Approve All Commands",
+			"alwaysAllowAllCommandsDescription": "When enabled, auto-approve will bypass the allowed commands list and approve all terminal commands (except those in the denied list). This is useful when you want to disable the allowedCommands check."
 		},
 		"showMenu": {
 			"label": "Show auto-approve menu in chat view",

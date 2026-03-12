@@ -18,6 +18,7 @@ type DisplaySettingsProps = HTMLAttributes<HTMLDivElement> & {
 	showTimestamps?: boolean
 	showDiffStats?: boolean // kilocode_change
 	reasoningBlockCollapsed: boolean
+	autoExpandSubsequentThinking?: boolean
 	setCachedStateField: SetCachedStateField<
 		| "showTaskTimeline"
 		| "sendMessageOnEnter"
@@ -26,6 +27,7 @@ type DisplaySettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "hideCostBelowThreshold"
 		| "showTimestamps"
 		| "showDiffStats"
+		| "autoExpandSubsequentThinking"
 	>
 	hideCostBelowThreshold?: number
 }
@@ -37,6 +39,7 @@ export const DisplaySettings = ({
 	sendMessageOnEnter,
 	setCachedStateField,
 	reasoningBlockCollapsed,
+	autoExpandSubsequentThinking,
 	hideCostBelowThreshold,
 	...props
 }: DisplaySettingsProps) => {
@@ -49,6 +52,15 @@ export const DisplaySettings = ({
 
 		// Track telemetry event
 		telemetryClient.capture("ui_settings_collapse_thinking_changed", {
+			enabled: value,
+		})
+	}
+
+	const handleAutoExpandSubsequentThinkingChange = (value: boolean) => {
+		setCachedStateField("autoExpandSubsequentThinking", value)
+
+		// Track telemetry event
+		telemetryClient.capture("ui_settings_auto_expand_subsequent_thinking_changed", {
 			enabled: value,
 		})
 	}
@@ -72,6 +84,18 @@ export const DisplaySettings = ({
 					</VSCodeCheckbox>
 					<div className="text-vscode-descriptionForeground text-sm ml-5 mt-1">
 						{t("settings:ui.collapseThinking.description")}
+					</div>
+				</div>
+				{/* Auto-expand subsequent thinking blocks setting */}
+				<div className="flex flex-col gap-1 mt-3">
+					<VSCodeCheckbox
+						checked={autoExpandSubsequentThinking ?? false}
+						onChange={(e: any) => handleAutoExpandSubsequentThinkingChange(e.target.checked)}
+						data-testid="auto-expand-subsequent-thinking-checkbox">
+						<span className="font-medium">{t("settings:ui.autoExpandSubsequentThinking.label")}</span>
+					</VSCodeCheckbox>
+					<div className="text-vscode-descriptionForeground text-sm ml-5 mt-1">
+						{t("settings:ui.autoExpandSubsequentThinking.description")}
 					</div>
 				</div>
 				<div>

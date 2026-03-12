@@ -2054,6 +2054,10 @@ export const webviewMessageHandler = async (
 			await updateGlobalState("reasoningBlockCollapsed", message.bool ?? true)
 			// No need to call postStateToWebview here as the UI already updated optimistically
 			break
+		case "setAutoExpandSubsequentThinking":
+			await updateGlobalState("autoExpandSubsequentThinking", message.bool ?? false)
+			// No need to call postStateToWebview here as the UI already updated optimistically
+			break
 		case "setHistoryPreviewCollapsed":
 			await updateGlobalState("historyPreviewCollapsed", message.bool ?? false)
 			// No need to call postStateToWebview here as the UI already updated optimistically
@@ -2131,6 +2135,12 @@ export const webviewMessageHandler = async (
 		// kilocode_change start: yolo mode
 		case "yoloMode":
 			await updateGlobalState("yoloMode", message.bool ?? false)
+			await provider.postStateToWebview()
+			break
+		// kilocode_change end
+		// kilocode_change start: always allow all commands
+		case "alwaysAllowAllCommands":
+			await updateGlobalState("alwaysAllowAllCommands", message.bool ?? false)
 			await provider.postStateToWebview()
 			break
 		// kilocode_change end

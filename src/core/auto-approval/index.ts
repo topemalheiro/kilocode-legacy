@@ -63,12 +63,6 @@ export async function checkAutoApproval({
 		return { decision: "approve" }
 	}
 
-	// kilocode_change start: YOLO mode - approve everything
-	if (state?.yoloMode) {
-		return { decision: "approve" }
-	}
-	// kilocode_change end
-
 	if (!state || !state.autoApprovalEnabled) {
 		return { decision: "ask" }
 	}
@@ -130,19 +124,24 @@ export async function checkAutoApproval({
 			return { decision: "ask" }
 		}
 
-		if (state.alwaysAllowExecute === true) {
-			// kilocode_change start: alwaysAllowAllCommands - bypass allowedCommands check, only check deniedCommands
-			if (state.alwaysAllowAllCommands === true) {
-				// Only check deniedCommands, approve everything else
-				const decision = getCommandDecision(text, ["*"], state.deniedCommands || [])
-				if (decision === "auto_deny") {
-					return { decision: "deny" }
-				}
-				return { decision: "approve" }
+		// kilocode_change start: alwaysAllowAllCommands - works when alwaysAllowExecute is OFF
+		// When enabled, bypass allowedCommands and only check deniedCommands
+		if (state.alwaysAllowAllCommands === true) {
+			const decision = getCommandDecision(text, ["*"], state.deniedCommands || [])
+			if (decision === "auto_deny") {
+				return { decision: "deny" }
 			}
-			// kilocode_change end
+			return { decision: "approve" }
+		}
+		// kilocode_change end
 
-			const decision = getCommandDecision(text, state.allowedCommands || [], state.deniedCommands || [])
+		if (state.alwaysAllowExecute === true) {
+			// kilocode_change: If allowedCommands is empty, treat it as wildcard (approve all)
+			// Only deniedCommands will be checked in this case
+			const effectiveAllowedCommands =
+				state.allowedCommands && state.allowedCommands.length > 0 ? state.allowedCommands : ["*"] // Approve all when no allowedCommands configured
+
+			const decision = getCommandDecision(text, effectiveAllowedCommands, state.deniedCommands || [])
 
 			if (decision === "auto_approve") {
 				return { decision: "approve" }
