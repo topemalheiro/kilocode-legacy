@@ -269,7 +269,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		ttsEnabled: false,
 		ttsSpeed: 1.0,
 		ttsPlaybackSpeed: 1.5, // kilocode_change
-		ttsVoice: "female", // kilocode_change
+		ttsVoice: "male", // kilocode_change
 		diffEnabled: false,
 		enableCheckpoints: true,
 		checkpointTimeout: DEFAULT_CHECKPOINT_TIMEOUT_SECONDS, // Default to 15 seconds

@@ -80,7 +80,7 @@ import { SessionManager } from "../../shared/kilocode/cli-sessions/core/SessionM
 import { SkillsManager } from "../../services/skills/SkillsManager"
 
 import { fileExistsAtPath } from "../../utils/fs"
-import { setTtsEnabled, setTtsSpeed, setTtsVoice } from "../../utils/tts"
+import { setTtsEnabled, setTtsSpeed, setTtsPlaybackSpeed, setTtsVoice } from "../../utils/tts"
 import { getWorkspaceGitInfo } from "../../utils/git"
 import { getWorkspacePath } from "../../utils/path"
 import { OrganizationAllowListViolationError } from "../../utils/errors"
@@ -861,12 +861,14 @@ export class ClineProvider
 			setTtsEnabled(ttsEnabled ?? false)
 		})
 
-		this.getState().then(({ ttsSpeed }) => {
-			setTtsSpeed(ttsSpeed ?? 1)
+		// kilocode_change: Use ttsPlaybackSpeed instead of ttsSpeed
+		this.getState().then(({ ttsPlaybackSpeed }) => {
+			setTtsPlaybackSpeed(ttsPlaybackSpeed ?? 1.5)
 		})
 
+		// kilocode_change: Use ttsVoice from globalState
 		this.getState().then(({ ttsVoice }) => {
-			setTtsVoice(ttsVoice ?? "Daniel")
+			setTtsVoice(ttsVoice ?? "male")
 		})
 
 		// Set up webview options with proper resource roots
@@ -2425,8 +2427,8 @@ export class ClineProvider
 			soundEnabled: soundEnabled ?? false,
 			ttsEnabled: ttsEnabled ?? false,
 			ttsSpeed: ttsSpeed ?? 1.0,
-			ttsPlaybackSpeed: ttsPlaybackSpeed ?? 1.0,
-			ttsVoice: ttsVoice ?? "Daniel",
+			ttsPlaybackSpeed: ttsPlaybackSpeed ?? 1.5, // kilocode_change: match React state default
+			ttsVoice: ttsVoice ?? "male", // kilocode_change: match React state default
 			diffEnabled: diffEnabled ?? true,
 			enableCheckpoints: enableCheckpoints ?? true,
 			checkpointTimeout: checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
@@ -2742,6 +2744,8 @@ export class ClineProvider
 			soundEnabled: stateValues.soundEnabled ?? false,
 			ttsEnabled: stateValues.ttsEnabled ?? false,
 			ttsSpeed: stateValues.ttsSpeed ?? 1.0,
+			ttsPlaybackSpeed: stateValues.ttsPlaybackSpeed ?? 1.5,
+			ttsVoice: stateValues.ttsVoice ?? "male",
 			diffEnabled: stateValues.diffEnabled ?? true,
 			enableCheckpoints: stateValues.enableCheckpoints ?? true,
 			checkpointTimeout: stateValues.checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,

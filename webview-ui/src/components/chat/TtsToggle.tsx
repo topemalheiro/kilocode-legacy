@@ -30,7 +30,9 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 	}, [ttsEnabled, setTtsEnabled])
 
 	const handleSpeedChange = useCallback(
-		(speed: number) => {
+		(speedPercent: number) => {
+			// Convert from integer percentage (50-350) to decimal (0.5-3.5)
+			const speed = speedPercent / 100
 			setTtsPlaybackSpeed(speed)
 			vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsPlaybackSpeed: speed } })
 		},
@@ -68,11 +70,11 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 						</label>
 						<input
 							type="range"
-							min={0.5}
-							max={3.5}
-							step={0.25}
-							value={ttsPlaybackSpeed ?? 1.5}
-							onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
+							min={50}
+							max={350}
+							step={25}
+							value={Math.round((ttsPlaybackSpeed ?? 1.5) * 100)}
+							onChange={(e) => handleSpeedChange(parseInt(e.target.value))}
 							className="w-full h-2 bg-vscode-progressBackground rounded-full appearance-none cursor-pointer accent-vscode-button-background"
 						/>
 						<div className="flex justify-between text-xs text-vscode-descriptionForeground">
@@ -85,7 +87,7 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 					<div className="flex flex-col gap-1">
 						<label className="text-xs text-vscode-descriptionForeground">Voice</label>
 						<select
-							value={ttsVoice ?? "female"}
+							value={ttsVoice ?? "male"}
 							onChange={(e) => handleVoiceChange(e.target.value)}
 							className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded">
 							{voices.map((voice) => (

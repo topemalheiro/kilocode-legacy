@@ -66,7 +66,7 @@ import { getTheme } from "../../integrations/theme/getTheme"
 import { discoverChromeHostUrl, tryChromeHostUrl } from "../../services/browser/browserDiscovery"
 import { searchWorkspaceFiles } from "../../services/search/file-search"
 import { fileExistsAtPath } from "../../utils/fs"
-import { playTts, setTtsEnabled, setTtsSpeed, setTtsVoice, stopTts } from "../../utils/tts"
+import { playTts, setTtsEnabled, setTtsSpeed, setTtsPlaybackSpeed, setTtsVoice, stopTts } from "../../utils/tts"
 import { showSystemNotification } from "../../integrations/notifications" // kilocode_change
 import { singleCompletionHandler } from "../../utils/single-completion-handler" // kilocode_change
 import { searchCommits } from "../../utils/git"
@@ -641,11 +641,14 @@ export const webviewMessageHandler = async (
 
 		case "updateSettings":
 			if (message.updatedSettings) {
+				console.log("[updateSettings] Received:", JSON.stringify(message.updatedSettings))
 				for (const [key, value] of Object.entries(message.updatedSettings)) {
 					let newValue = value
 
 					if (key === "language") {
-						newValue = value ?? "en"
+						newValue = (value as string) || "en"
+						console.log("[updateSettings] Saving language:", newValue)
+						await updateGlobalState("language", newValue)
 						changeLanguage(newValue as Language)
 					} else if (key === "allowedCommands") {
 						const commands = value ?? []
@@ -670,9 +673,28 @@ export const webviewMessageHandler = async (
 					} else if (key === "ttsEnabled") {
 						newValue = value ?? true
 						setTtsEnabled(newValue as boolean)
+						// Skip generic setValue - no need to save to globalState
+						continue
 					} else if (key === "ttsSpeed") {
 						newValue = value ?? 1.0
+						await updateGlobalState("ttsSpeed", newValue as number)
 						setTtsSpeed(newValue as number)
+					} else if (key === "ttsPlaybackSpeed") {
+						// kilocode_change: Handle TTS playback speed from webview
+						newValue = (value as number) ?? 1.5
+						console.log("[updateSettings] Saving ttsPlaybackSpeed:", newValue)
+						await updateGlobalState("ttsPlaybackSpeed", newValue as number)
+						setTtsPlaybackSpeed(newValue as number)
+						// Skip generic setValue - already saved via updateGlobalState above
+						continue
+					} else if (key === "ttsVoice") {
+						// kilocode_change: Handle TTS voice selection from webview
+						newValue = (value as string) || "male"
+						console.log("[updateSettings] Saving ttsVoice:", newValue)
+						await updateGlobalState("ttsVoice", newValue as string)
+						setTtsVoice(newValue as string)
+						// Skip generic setValue - already saved via updateGlobalState above
+						continue
 					} else if (key === "terminalShellIntegrationTimeout") {
 						if (value !== undefined) {
 							Terminal.setShellIntegrationTimeout(value as number)
@@ -1838,12 +1860,15 @@ export const webviewMessageHandler = async (
 			break
 		case "ttsPlaybackSpeed":
 			const ttsPlaybackSpeed = typeof message.value === "number" ? message.value : 1.5
+			console.log("[ttsPlaybackSpeed message] Saving:", ttsPlaybackSpeed)
 			await updateGlobalState("ttsPlaybackSpeed", ttsPlaybackSpeed)
-			setTtsSpeed(ttsPlaybackSpeed)
+			setTtsPlaybackSpeed(ttsPlaybackSpeed)
 			await provider.postStateToWebview()
 			break
 		case "ttsVoice":
-			const ttsVoice = typeof message.value === "string" ? message.value : "female"
+			// kilocode_change: SettingsView sends message.text, not message.value
+			const ttsVoice = typeof message.text === "string" ? message.text : "male"
+			console.log("[ttsVoice message] Saving:", ttsVoice)
 			await updateGlobalState("ttsVoice", ttsVoice)
 			setTtsVoice(ttsVoice)
 			await provider.postStateToWebview()

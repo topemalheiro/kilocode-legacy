@@ -96,14 +96,14 @@ export const NotificationSettings = ({
 							</label>
 							<div className="flex items-center gap-2">
 								<Slider
-									min={0.5}
-									max={3.5}
-									step={0.25}
-									value={[ttsPlaybackSpeed ?? 1.5]}
-									onValueChange={([value]) => setCachedStateField("ttsPlaybackSpeed", value)}
+									min={50}
+									max={350}
+									step={25}
+									value={[Math.round((ttsPlaybackSpeed ?? 1.5) * 100)]}
+									onValueChange={([value]) => setCachedStateField("ttsPlaybackSpeed", value / 100)}
 									data-testid="tts-speed-slider"
 								/>
-								<span className="w-12">{((ttsPlaybackSpeed ?? 1.5) * 100).toFixed(0)}%</span>
+								<span className="w-12">{Math.round((ttsPlaybackSpeed ?? 1.5) * 100)}%</span>
 							</div>
 						</SearchableSetting>
 
@@ -111,7 +111,7 @@ export const NotificationSettings = ({
 						<SearchableSetting settingId="notifications-tts-voice" section="notifications" label="Voice">
 							<label className="block font-medium mb-1">Voice</label>
 							<select
-								value={ttsVoice ?? "female"}
+								value={ttsVoice ?? "male"}
 								onChange={(e) => setCachedStateField("ttsVoice", e.target.value)}
 								className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded">
 								{TTS_VOICES.map((voice) => (
