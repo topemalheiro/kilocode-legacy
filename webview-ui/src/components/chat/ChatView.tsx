@@ -45,6 +45,7 @@ import { ChatTextArea } from "./ChatTextArea"
 // import TaskHeader from "./TaskHeader"// kilocode_change
 import KiloTaskHeader from "../kilocode/KiloTaskHeader" // kilocode_change
 import AutoApproveMenu from "./AutoApproveMenu"
+import TtsToggle from "./TtsToggle" // kilocode_change
 import BottomControls from "../kilocode/BottomControls" // kilocode_change
 import SystemPromptWarning from "./SystemPromptWarning"
 // import ProfileViolationWarning from "./ProfileViolationWarning" kilocode_change: unused
@@ -1776,8 +1777,9 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			*/}
 				{/* kilocode_change: added settings toggle for this */}
 				{!task && showAutoApproveMenu && (
-					<div className="mb-1 flex-initial min-h-0">
+					<div className="mb-1 flex-initial min-h-0 flex items-center gap-2">
 						<AutoApproveMenu />
+						<TtsToggle />
 					</div>
 				)}
 
@@ -1805,7 +1807,12 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						</div>
 						<div className={`flex-initial min-h-0 ${!areButtonsVisible ? "mb-1" : ""}`}>
 							{/* kilocode_change: added settings toggle for this */}
-							{showAutoApproveMenu && <AutoApproveMenu />}
+							{showAutoApproveMenu && (
+								<div className="flex items-center gap-2">
+									<AutoApproveMenu />
+									<TtsToggle />
+								</div>
+							)}
 						</div>
 						{areButtonsVisible && (
 							<div

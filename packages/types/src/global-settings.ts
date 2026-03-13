@@ -167,6 +167,8 @@ export const globalSettingsSchema = z.object({
 
 	ttsEnabled: z.boolean().optional(),
 	ttsSpeed: z.number().optional(),
+	ttsPlaybackSpeed: z.number().optional(), // kilocode_change: TTS playback speed (0.5-3.0)
+	ttsVoice: z.string().optional(), // kilocode_change: TTS voice selection
 	soundEnabled: z.boolean().optional(),
 	soundVolume: z.number().optional(),
 	systemNotificationsEnabled: z.boolean().optional(), // kilocode_change
