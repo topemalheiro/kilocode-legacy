@@ -181,7 +181,7 @@ const TaskHeader = ({
 								<div className="flex items-center gap-2">
 									<SquarePen className="size-3 shrink-0" />
 									<span className="whitespace-nowrap overflow-hidden text-ellipsis">
-										<Mention text={task.text} />
+										<Mention text={currentTaskItem?.customName || task.text} />
 									</span>
 								</div>
 							)}
@@ -333,7 +333,7 @@ const TaskHeader = ({
 									WebkitLineClamp: "unset",
 									WebkitBoxOrient: "vertical",
 								}}>
-								<Mention text={task.text} />
+								<Mention text={currentTaskItem?.customName || task.text} />
 							</div>
 						</div>
 						{task.images && task.images.length > 0 && <Thumbnails images={task.images} />}
