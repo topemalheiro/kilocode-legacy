@@ -16,6 +16,7 @@ import { cn } from "@src/lib/utils"
 import { Button } from "@src/components/ui"
 import CodeBlock from "../kilocode/common/CodeBlock" // kilocode_change
 import McpToolRow from "../mcp/McpToolRow"
+import { AudioPlayer, extractAudioData, isBase64Audio } from "./AudioPlayer" // kilocode_change: TTS audio support
 
 import { Markdown } from "./Markdown"
 
@@ -301,6 +302,7 @@ export const McpExecution = ({
 					isJson={responseIsJson}
 					hasArguments={!!(isArguments || useMcpServer?.arguments || argumentsText)}
 					isPartial={status ? status.status !== "completed" : false}
+					toolName={toolName}
 				/>
 			</div>
 		</>
@@ -315,12 +317,14 @@ const ResponseContainerInternal = ({
 	isJson,
 	hasArguments,
 	isPartial = false,
+	toolName,
 }: {
 	isExpanded: boolean
 	response: string
 	isJson: boolean
 	hasArguments?: boolean
 	isPartial?: boolean
+	toolName?: string
 }) => {
 	// Only render content when expanded to prevent performance issues with large responses
 	if (!isExpanded || response.length === 0) {
@@ -333,13 +337,31 @@ const ResponseContainerInternal = ({
 		)
 	}
 
+	// kilocode_change: Check for TTS audio response
+	const audioResult = extractAudioData(response)
+	const isTtsTool =
+		toolName &&
+		(toolName.toLowerCase().includes("tts") ||
+			toolName.toLowerCase().includes("speak") ||
+			toolName.toLowerCase().includes("speech") ||
+			toolName.toLowerCase().includes("audio") ||
+			toolName.toLowerCase().includes("text_to_audio"))
+
+	// Show audio player if it's audio data OR if it's a known TTS tool and response looks like audio
+	const showAudio = audioResult.isAudio || (isTtsTool && isBase64Audio(response))
+
 	return (
 		<div
 			className={cn("overflow-hidden", {
 				"max-h-96 overflow-y-auto mt-1 pt-1 border-t border-border/25": hasArguments,
 				"max-h-96 overflow-y-auto mt-1 pt-1": !hasArguments,
 			})}>
-			{isJson ? (
+			{showAudio && audioResult.isAudio ? (
+				// kilocode_change: Display audio player for TTS responses
+				<div className="py-2">
+					<AudioPlayer audioData={audioResult.data} format={audioResult.format as "mp3" | "wav" | "ogg"} />
+				</div>
+			) : isJson ? (
 				<CodeBlock source={response} language="json" />
 			) : (
 				<Markdown markdown={response} partial={isPartial} />
