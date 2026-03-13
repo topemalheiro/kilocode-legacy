@@ -988,6 +988,7 @@ export interface WebviewMessage {
 		| "reviewScopeSelected" // kilocode_change: Review mode scope selection
 	text?: string
 	customName?: string // kilocode_change: For setTaskCustomName message
+	taskId?: string // kilocode_change: For setTaskCustomName message
 	suggestionLength?: number // kilocode_change: Length of accepted suggestion for telemetry
 	completionRequestId?: string // kilocode_change
 	shareId?: string // kilocode_change - for sessionFork
