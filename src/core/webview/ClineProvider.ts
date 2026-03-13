@@ -1973,6 +1973,9 @@ export class ClineProvider
 		}
 
 		await this.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
+		// kilocode_change: Ensure state is posted to webview after resuming task
+		// This fixes the issue where alwaysAllowAllCommands wasn't being preserved
+		await this.postStateToWebview()
 	}
 
 	async exportTaskWithId(id: string) {
