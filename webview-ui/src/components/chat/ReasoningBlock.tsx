@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
+import { useThinkingBlockSync } from "@src/context/ThinkingBlockSyncContext"
 
 import MarkdownBlock from "../common/MarkdownBlock"
 import { Lightbulb, ChevronUp } from "lucide-react"
@@ -16,17 +17,30 @@ interface ReasoningBlockProps {
 
 export const ReasoningBlock = ({ content, isStreaming, isLast }: ReasoningBlockProps) => {
 	const { t } = useTranslation()
-	const { reasoningBlockCollapsed } = useExtensionState()
+	const { reasoningBlockCollapsed, autoExpandSubsequentThinking } = useExtensionState()
+	const { syncedExpanded, setSyncedExpanded } = useThinkingBlockSync()
 
 	const [isCollapsed, setIsCollapsed] = useState(reasoningBlockCollapsed)
+	// Track if THIS specific block is the one that triggered the sync
+	const [isLeader, setIsLeader] = useState(false)
 
 	const startTimeRef = useRef<number>(Date.now())
 	const [elapsed, setElapsed] = useState<number>(0)
 	const contentRef = useRef<HTMLDivElement>(null)
 
+	// When sync state changes, update local state (but not if we're the leader - we already handled it)
 	useEffect(() => {
-		setIsCollapsed(reasoningBlockCollapsed)
-	}, [reasoningBlockCollapsed])
+		if (autoExpandSubsequentThinking && syncedExpanded !== null && !isLeader) {
+			setIsCollapsed(!syncedExpanded)
+		}
+	}, [autoExpandSubsequentThinking, syncedExpanded, isLeader])
+
+	useEffect(() => {
+		// Reset to default when sync is disabled
+		if (!autoExpandSubsequentThinking) {
+			setIsLeader(false)
+		}
+	}, [autoExpandSubsequentThinking])
 
 	useEffect(() => {
 		if (isLast && isStreaming) {
@@ -40,7 +54,16 @@ export const ReasoningBlock = ({ content, isStreaming, isLast }: ReasoningBlockP
 	const seconds = Math.floor(elapsed / 1000)
 	const secondsLabel = t("chat:reasoning.seconds", { count: seconds })
 
+	// Track if this specific block is the one that triggered the sync
 	const handleToggle = () => {
+		// If sync is enabled and this block is not yet the leader
+		if (autoExpandSubsequentThinking && !isLeader) {
+			// Mark this block as the leader (the one that controls sync)
+			setIsLeader(true)
+			// Update the synced state to match current collapsed state
+			setSyncedExpanded(isCollapsed ?? false)
+		}
+		// Toggle locally
 		setIsCollapsed(!isCollapsed)
 	}
 
@@ -61,7 +84,9 @@ export const ReasoningBlock = ({ content, isStreaming, isLast }: ReasoningBlockP
 				<div className="flex items-center gap-2">
 					<ChevronUp
 						className={cn(
-							"w-4 transition-all opacity-0 group-hover:opacity-100",
+							"w-4 transition-all",
+							// Always show when sync is enabled (so user knows they can click), otherwise show on hover
+							autoExpandSubsequentThinking ? "opacity-100" : "opacity-0 group-hover:opacity-100",
 							isCollapsed && "-rotate-180",
 						)}
 					/>

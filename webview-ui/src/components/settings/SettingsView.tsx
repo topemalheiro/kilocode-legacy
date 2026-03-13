@@ -151,6 +151,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 	)
 
 	const [editingApiConfigName, setEditingApiConfigName] = useState<string>(currentApiConfigName || "default") // kilocode_change: Track which profile is being edited separately from the active profile
+	const [isSaving, setIsSaving] = useState(false) // kilocode_change: Flag to prevent state sync during save
 
 	const scrollPositions = useRef<Record<SectionName, number>>(
 		Object.fromEntries(sectionNames.map((s) => [s, 0])) as Record<SectionName, number>,
@@ -241,6 +242,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 		profileThresholds,
 		systemNotificationsEnabled, // kilocode_change
 		alwaysAllowFollowupQuestions,
+		alwaysAllowAllCommands, // kilocode_change: bypass allowedCommands check
 		followupAutoApproveTimeoutMs,
 		ghostServiceSettings, // kilocode_change
 		// kilocode_change start - Auto-purge settings
@@ -264,6 +266,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 		includeCurrentTime,
 		includeCurrentCost,
 		maxGitStatusFiles,
+		autoExpandSubsequentThinking, // kilocode_change
 	} = cachedState
 
 	const apiConfiguration = useMemo(() => cachedState.apiConfiguration ?? {}, [cachedState.apiConfiguration])
@@ -342,7 +345,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 		// Only update if we're not already detecting changes
 		// This prevents overwriting user changes that haven't been saved yet
 		// Also skip if we're loading a profile for editing
-		if (!isChangeDetected && !isLoadingProfileForEditing.current) {
+		// Also skip if we're currently saving (waiting for backend to respond)
+		if (!isChangeDetected && !isLoadingProfileForEditing.current && !isSaving) {
 			// When editing a different profile than the active one,
 			// don't overwrite apiConfiguration from extensionState since it contains
 			// the active profile's config, not the editing profile's config
@@ -358,7 +362,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 				setCachedState(extensionState)
 			}
 		}
-	}, [extensionState, isChangeDetected, editingApiConfigName, currentApiConfigName])
+	}, [extensionState, isChangeDetected, editingApiConfigName, currentApiConfigName, isSaving])
 
 	// Bust the cache when settings are imported.
 	useEffect(() => {
@@ -530,6 +534,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 
 	const handleSubmit = () => {
 		if (isSettingValid) {
+			// kilocode_change: Set saving flag to prevent state sync during save
+			setIsSaving(true)
+
 			vscode.postMessage({
 				type: "updateSettings",
 				updatedSettings: {
@@ -592,6 +599,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 					maxDiagnosticMessages: maxDiagnosticMessages ?? 50,
 					alwaysAllowSubtasks,
 					alwaysAllowFollowupQuestions: alwaysAllowFollowupQuestions ?? false,
+					alwaysAllowAllCommands: alwaysAllowAllCommands ?? false, // kilocode_change
 					followupAutoApproveTimeoutMs,
 					condensingApiConfigId: condensingApiConfigId || "",
 					includeTaskHistoryInEnhance: includeTaskHistoryInEnhance ?? true,
@@ -613,6 +621,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 			vscode.postMessage({ type: "terminalCommandApiConfigId", text: terminalCommandApiConfigId || "" }) // kilocode_change
 			vscode.postMessage({ type: "showAutoApproveMenu", bool: showAutoApproveMenu }) // kilocode_change
 			vscode.postMessage({ type: "yoloMode", bool: yoloMode }) // kilocode_change
+			vscode.postMessage({ type: "alwaysAllowAllCommands", bool: alwaysAllowAllCommands }) // kilocode_change
 			vscode.postMessage({ type: "allowVeryLargeReads", bool: allowVeryLargeReads }) // kilocode_change
 			vscode.postMessage({ type: "currentApiConfigName", text: currentApiConfigName })
 			vscode.postMessage({ type: "showTaskTimeline", bool: showTaskTimeline }) // kilocode_change
@@ -623,6 +632,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 			vscode.postMessage({ type: "updateCondensingPrompt", text: customCondensingPrompt || "" })
 			vscode.postMessage({ type: "yoloGatekeeperApiConfigId", text: yoloGatekeeperApiConfigId || "" }) // kilocode_change: AI gatekeeper for YOLO mode
 			vscode.postMessage({ type: "setReasoningBlockCollapsed", bool: reasoningBlockCollapsed ?? true })
+			vscode.postMessage({ type: "setAutoExpandSubsequentThinking", bool: autoExpandSubsequentThinking }) // kilocode_change
 			vscode.postMessage({ type: "upsertApiConfiguration", text: editingApiConfigName, apiConfiguration }) // kilocode_change: Save to editing profile instead of current active profile
 			vscode.postMessage({ type: "telemetrySetting", text: telemetrySetting })
 			vscode.postMessage({ type: "systemNotificationsEnabled", bool: systemNotificationsEnabled }) // kilocode_change
@@ -649,21 +659,12 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 			// kilocode_change end - Auto-purge settings
 			vscode.postMessage({ type: "debugSetting", bool: cachedState.debug })
 
-			// kilocode_change: After saving, sync cachedState to extensionState without clobbering
-			// the editing profile's apiConfiguration when editing a non-active profile.
-			if (editingApiConfigName !== currentApiConfigName) {
-				// Only sync non-apiConfiguration fields from extensionState
-				const { apiConfiguration: _, ...restOfExtensionState } = extensionState
-				setCachedState((prevState) => ({
-					...prevState,
-					...restOfExtensionState,
-				}))
-			} else {
-				// When editing the active profile, sync everything including apiConfiguration
-				setCachedState((prevState) => ({ ...prevState, ...extensionState }))
-			}
-			// kilocode_change end
+			// kilocode_change: After saving, do NOT sync cachedState to extensionState immediately.
+			// The extensionState will be updated when the backend sends the new state via the "state" message.
+			// This prevents a race condition where the old extensionState values overwrite the new cachedState values.
+			// Also reset the saving flag after a short delay to allow the backend to process
 			setChangeDetected(false)
+			setTimeout(() => setIsSaving(false), 1000)
 		}
 	}
 
@@ -1127,6 +1128,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 								alwaysAllowSubtasks={alwaysAllowSubtasks}
 								alwaysAllowExecute={alwaysAllowExecute}
 								alwaysAllowFollowupQuestions={alwaysAllowFollowupQuestions}
+								alwaysAllowAllCommands={alwaysAllowAllCommands} // kilocode_change
 								followupAutoApproveTimeoutMs={followupAutoApproveTimeoutMs}
 								allowedCommands={allowedCommands}
 								allowedMaxRequests={allowedMaxRequests ?? undefined}
@@ -1181,6 +1183,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 								showDiffStats={cachedState.showDiffStats} // kilocode_change
 								hideCostBelowThreshold={hideCostBelowThreshold}
 								setCachedStateField={setCachedStateField}
+								autoExpandSubsequentThinking={autoExpandSubsequentThinking} // kilocode_change
 							/>
 						)}
 						{activeTab === "autocomplete" && (

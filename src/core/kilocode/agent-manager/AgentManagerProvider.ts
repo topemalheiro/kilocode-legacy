@@ -50,6 +50,13 @@ import { isRouterName, type ModelRecord } from "../../../shared/api"
 import { OPENAI_CODEX_CREDENTIALS_KEY } from "../../../integrations/openai-codex/oauth"
 
 /**
+ * Hidden instruction to inject when images are attached to a message.
+ * This tells the agent to use the understand_image MCP tool first.
+ */
+const HIDDEN_IMAGE_INSTRUCTION =
+	"\n\n[SYSTEM: When images are provided, first use the understand_image MCP tool to analyze them before proceeding with the task.]\n"
+
+/**
  * Message format for sending responses to the agent runtime via IPC.
  * Used for user messages, approval responses, and other interactions.
  */
@@ -1358,8 +1365,17 @@ export class AgentManagerProvider implements vscode.Disposable {
 			return
 		}
 
+		// Inject hidden instruction when images are present (not shown to user, only sent to agent)
+		let finalContent = content
+		if (images && images.length > 0) {
+			finalContent = HIDDEN_IMAGE_INSTRUCTION + content
+			this.outputChannel.appendLine(
+				`[AgentManager] Injected hidden image instruction for ${images.length} image(s)`,
+			)
+		}
+
 		// Use buildRuntimeMessage to send base64 images directly (not file paths)
-		const message = this.buildRuntimeMessage(content, images)
+		const message = this.buildRuntimeMessage(finalContent, images)
 		await this.safeWriteToStdin(sessionId, message, "message")
 	}
 
@@ -1440,8 +1456,17 @@ export class AgentManagerProvider implements vscode.Disposable {
 		this.notifyMessageStatus(sessionId, messageId, "sending")
 
 		try {
+			// Inject hidden instruction when images are present (not shown to user, only sent to agent)
+			let finalContent = content
+			if (images && images.length > 0) {
+				finalContent = HIDDEN_IMAGE_INSTRUCTION + content
+				this.outputChannel.appendLine(
+					`[AgentManager] Injected hidden image instruction for ${images.length} image(s)`,
+				)
+			}
+
 			// Use buildRuntimeMessage to send base64 images directly (not file paths)
-			const message = this.buildRuntimeMessage(content, images)
+			const message = this.buildRuntimeMessage(finalContent, images)
 			await this.safeWriteToStdin(sessionId, message, "message")
 			this.log(sessionId, `Message ${messageId} sent successfully`)
 			this.notifyMessageStatus(sessionId, messageId, "sent")
@@ -1507,6 +1532,15 @@ export class AgentManagerProvider implements vscode.Disposable {
 			this.outputChannel.appendLine(`[AgentManager] Passing ${images.length} images (base64) to resumed session`)
 		}
 
+		// Inject hidden instruction when images are present (not shown to user, only sent to agent)
+		let finalContent = content
+		if (images && images.length > 0) {
+			finalContent = HIDDEN_IMAGE_INSTRUCTION + content
+			this.outputChannel.appendLine(
+				`[AgentManager] Injected hidden image instruction for ${images.length} image(s)`,
+			)
+		}
+
 		this.outputChannel.appendLine(`[AgentManager] Resuming session ${sessionId} with new prompt`)
 
 		// Fetch full session data for resume (UI messages + API history + metadata)
@@ -1543,7 +1577,7 @@ export class AgentManagerProvider implements vscode.Disposable {
 		if (session?.parallelMode?.enabled && session.parallelMode.branch) {
 			const worktreeInfo = await this.prepareWorktreeForResume(session)
 			if (worktreeInfo) {
-				await this.spawnAgentWithCommonSetup(content, {
+				await this.spawnAgentWithCommonSetup(finalContent, {
 					sessionId,
 					parallelMode: true,
 					gitUrl: session.gitUrl,
@@ -1561,7 +1595,7 @@ export class AgentManagerProvider implements vscode.Disposable {
 		}
 
 		// Resume session - pass session data for agent-runtime to load
-		await this.spawnAgentWithCommonSetup(content, {
+		await this.spawnAgentWithCommonSetup(finalContent, {
 			sessionId,
 			label: sessionLabel || session?.label,
 			parallelMode: session?.parallelMode?.enabled,

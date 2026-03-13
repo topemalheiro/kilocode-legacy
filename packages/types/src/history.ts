@@ -19,6 +19,7 @@ export const historyItemSchema = z.object({
 	size: z.number().optional(),
 	workspace: z.string().optional(),
 	isFavorited: z.boolean().optional(), // kilocode_change
+	customName: z.string().optional(), // kilocode_change: User-defined name for the task
 	mode: z.string().optional(),
 	/**
 	 * The tool protocol used by this task. Once a task uses tools with a specific

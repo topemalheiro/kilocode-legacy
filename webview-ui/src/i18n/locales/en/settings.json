@@ -213,6 +213,10 @@
 		"description": "Run these actions without asking for permission. Only enable for actions you fully trust and if you understand the security risks.",
 		"toggleShortcut": "You can configure a keyboard shortcut for this setting <SettingsLink>in your IDE preferences</SettingsLink>.",
 		"enabled": "Auto-Approve Enabled",
+		"bypassAllowed": {
+			"label": "Bypass Allowed Commands",
+			"description": "When enabled, execute operations will bypass the allowed commands list check and run all commands without approval (requires Execute auto-approve to be enabled). Use with caution."
+		},
 		"readOnly": {
 			"label": "Read",
 			"description": "When enabled, Kilo Code will automatically view directory contents and read files without requiring you to click the Approve button.",

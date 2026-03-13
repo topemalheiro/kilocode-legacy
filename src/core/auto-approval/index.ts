@@ -69,6 +69,29 @@ export async function checkAutoApproval({
 	}
 	// kilocode_change end
 
+	// kilocode_change start: alwaysAllowAllCommands - bypass allowedCommands check for terminal commands only
+	// Only apply to 'command' ask type, NOT to use_mcp_server or other ask types
+	if (ask === "command" && state?.alwaysAllowAllCommands === true) {
+		return { decision: "approve" }
+	}
+	// kilocode_change end
+
+	// kilocode_change start: alwaysAllowAllCommands - also applies to MCP tools now
+	// If alwaysAllowAllCommands is true, bypass the per-tool check and approve everything except 'question'
+	if (ask === "use_mcp_server" && state?.alwaysAllowAllCommands === true) {
+		try {
+			const mcpServerUse = JSON.parse(text || "{}") as McpServerUse
+			// The 'question' tool should always ask for confirmation
+			if (mcpServerUse.toolName === "question") {
+				return { decision: "ask" }
+			}
+			return { decision: "approve" }
+		} catch (error) {
+			return { decision: "ask" }
+		}
+	}
+	// kilocode_change end
+
 	if (!state || !state.autoApprovalEnabled) {
 		return { decision: "ask" }
 	}

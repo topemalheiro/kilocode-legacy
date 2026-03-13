@@ -2054,6 +2054,10 @@ export const webviewMessageHandler = async (
 			await updateGlobalState("reasoningBlockCollapsed", message.bool ?? true)
 			// No need to call postStateToWebview here as the UI already updated optimistically
 			break
+		case "setAutoExpandSubsequentThinking":
+			await updateGlobalState("autoExpandSubsequentThinking", message.bool ?? false)
+			// No need to call postStateToWebview here as the UI already updated optimistically
+			break
 		case "setHistoryPreviewCollapsed":
 			await updateGlobalState("historyPreviewCollapsed", message.bool ?? false)
 			// No need to call postStateToWebview here as the UI already updated optimistically
@@ -2128,6 +2132,15 @@ export const webviewMessageHandler = async (
 			await updateGlobalState("autoApprovalEnabled", message.bool ?? false)
 			await provider.postStateToWebview()
 			break
+		// kilocode_change start: alwaysAllowAllCommands bypass
+		case "alwaysAllowAllCommands":
+			console.log("[alwaysAllowAllCommands] Received message:", message.bool)
+			await updateGlobalState("alwaysAllowAllCommands", message.bool ?? false)
+			console.log("[alwaysAllowAllCommands] Updated global state, posting state to webview")
+			await provider.postStateToWebview()
+			console.log("[alwaysAllowAllCommands] Done")
+			break
+		// kilocode_change end
 		// kilocode_change start: yolo mode
 		case "yoloMode":
 			await updateGlobalState("yoloMode", message.bool ?? false)
@@ -3823,6 +3836,12 @@ export const webviewMessageHandler = async (
 		case "toggleTaskFavorite":
 			if (message.text) {
 				await provider.toggleTaskFavorite(message.text)
+			}
+			break
+		// kilocode_change start - add setTaskCustomName (for task renaming)
+		case "setTaskCustomName":
+			if (message.text && message.customName !== undefined) {
+				await provider.setTaskCustomName(message.text, message.customName)
 			}
 			break
 		// kilocode_change start - add fixMermaidSyntax

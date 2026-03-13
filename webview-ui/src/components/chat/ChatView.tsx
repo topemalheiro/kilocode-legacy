@@ -57,6 +57,7 @@ import { buildDocLink } from "@/utils/docLinks"
 // import DismissibleUpsell from "../common/DismissibleUpsell" // kilocode_change: unused
 // import { useCloudUpsell } from "@src/hooks/useCloudUpsell" // kilocode_change: unused
 // import { Cloud } from "lucide-react" // kilocode_change: unused
+import { ThinkingBlockSyncProvider } from "@src/context/ThinkingBlockSyncContext"
 
 export interface ChatViewProps {
 	isHidden: boolean
@@ -1605,27 +1606,28 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const showTelemetryBanner = telemetrySetting === "unset" // kilocode_change
 
 	return (
-		<div
-			data-testid="chat-view"
-			className={
-				isHidden ? "hidden" : "fixed top-0 left-0 right-0 mx-auto bottom-0 flex flex-col overflow-hidden" // kilocode_change; removed max-w-5xl to fill sidebar width
-			}>
-			{(showAnnouncement || showAnnouncementModal) && (
-				<Announcement
-					hideAnnouncement={() => {
-						if (showAnnouncementModal) {
-							setShowAnnouncementModal(false)
-						}
-						if (showAnnouncement) {
-							hideAnnouncement()
-						}
-					}}
-				/>
-			)}
-			{task ? (
-				<>
-					{/* kilocode_change start */}
-					{/* <TaskHeader
+		<ThinkingBlockSyncProvider>
+			<div
+				data-testid="chat-view"
+				className={
+					isHidden ? "hidden" : "fixed top-0 left-0 right-0 mx-auto bottom-0 flex flex-col overflow-hidden" // kilocode_change; removed max-w-5xl to fill sidebar width
+				}>
+				{(showAnnouncement || showAnnouncementModal) && (
+					<Announcement
+						hideAnnouncement={() => {
+							if (showAnnouncementModal) {
+								setShowAnnouncementModal(false)
+							}
+							if (showAnnouncement) {
+								hideAnnouncement()
+							}
+						}}
+					/>
+				)}
+				{task ? (
+					<>
+						{/* kilocode_change start */}
+						{/* <TaskHeader
 						task={task}
 						tokensIn={apiMetrics.totalTokensIn}
 						tokensOut={apiMetrics.totalTokensOut}
@@ -1657,107 +1659,107 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 						handleCondenseContext={handleCondenseContext}
 						todos={latestTodos}
 					/> */}
-					<KiloTaskHeader
-						task={task}
-						tokensIn={apiMetrics.totalTokensIn}
-						tokensOut={apiMetrics.totalTokensOut}
-						cacheWrites={apiMetrics.totalCacheWrites}
-						cacheReads={apiMetrics.totalCacheReads}
-						totalCost={apiMetrics.totalCost}
-						contextTokens={apiMetrics.contextTokens}
-						buttonsDisabled={sendingDisabled}
-						handleCondenseContext={handleCondenseContext}
-						onClose={handleTaskCloseButtonClick}
-						groupedMessages={groupedMessages}
-						onMessageClick={handleMessageClick}
-						isTaskActive={sendingDisabled}
-						todos={latestTodos}
-					/>
-					{/* kilocode_change start */}
+						<KiloTaskHeader
+							task={task}
+							tokensIn={apiMetrics.totalTokensIn}
+							tokensOut={apiMetrics.totalTokensOut}
+							cacheWrites={apiMetrics.totalCacheWrites}
+							cacheReads={apiMetrics.totalCacheReads}
+							totalCost={apiMetrics.totalCost}
+							contextTokens={apiMetrics.contextTokens}
+							buttonsDisabled={sendingDisabled}
+							handleCondenseContext={handleCondenseContext}
+							onClose={handleTaskCloseButtonClick}
+							groupedMessages={groupedMessages}
+							onMessageClick={handleMessageClick}
+							isTaskActive={sendingDisabled}
+							todos={latestTodos}
+						/>
+						{/* kilocode_change start */}
 
-					{hasSystemPromptOverride && (
-						<div className="px-3">
-							<SystemPromptWarning />
-						</div>
-					)}
-
-					{checkpointWarning && (
-						<div className="px-3">
-							<CheckpointWarning warning={checkpointWarning} />
-						</div>
-					)}
-				</>
-			) : (
-				<div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 relative">
-					{/* Moved Task Bar Header Here */}
-					<div className="flex items-center justify-between w-full mx-auto px-5 pt-3">
-						{taskHistoryFullLength !== 0 && (
-							<div className="flex text-vscode-descriptionForeground">
-								<div className="flex items-center gap-1 cursor-pointer" onClick={toggleExpanded}>
-									{taskHistoryFullLength < 10 && (
-										<span className={`font-medium text-xs `}>{t("history:recentTasks")}</span>
-									)}
-									<span
-										className={`codicon  ${isExpanded ? "codicon-eye" : "codicon-eye-closed"} scale-90`}
-									/>
-								</div>
+						{hasSystemPromptOverride && (
+							<div className="px-3">
+								<SystemPromptWarning />
 							</div>
 						)}
-						{!showTelemetryBanner && <OrganizationSelector className="w-40 shrink-0 ml-auto" />}
-					</div>
-					{/* kilocode_change start: changed the classes to support notifications */}
-					<div className="w-full h-full flex flex-col gap-4 px-3.5 transition-all duration-300">
-						{/* kilocode_change end */}
-						{/* Version indicator in top-right corner - only on welcome screen */}
-						{/* kilocode_change: do not show */}
-						{/* <VersionIndicator
+
+						{checkpointWarning && (
+							<div className="px-3">
+								<CheckpointWarning warning={checkpointWarning} />
+							</div>
+						)}
+					</>
+				) : (
+					<div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 relative">
+						{/* Moved Task Bar Header Here */}
+						<div className="flex items-center justify-between w-full mx-auto px-5 pt-3">
+							{taskHistoryFullLength !== 0 && (
+								<div className="flex text-vscode-descriptionForeground">
+									<div className="flex items-center gap-1 cursor-pointer" onClick={toggleExpanded}>
+										{taskHistoryFullLength < 10 && (
+											<span className={`font-medium text-xs `}>{t("history:recentTasks")}</span>
+										)}
+										<span
+											className={`codicon  ${isExpanded ? "codicon-eye" : "codicon-eye-closed"} scale-90`}
+										/>
+									</div>
+								</div>
+							)}
+							{!showTelemetryBanner && <OrganizationSelector className="w-40 shrink-0 ml-auto" />}
+						</div>
+						{/* kilocode_change start: changed the classes to support notifications */}
+						<div className="w-full h-full flex flex-col gap-4 px-3.5 transition-all duration-300">
+							{/* kilocode_change end */}
+							{/* Version indicator in top-right corner - only on welcome screen */}
+							{/* kilocode_change: do not show */}
+							{/* <VersionIndicator
 							onClick={() => setShowAnnouncementModal(true)}
 							className="absolute top-2 right-3 z-10"
 						/>
 
 						<RooHero /> */}
 
-						{/* kilocode_change start: KilocodeNotifications + Layout fixes */}
-						{showTelemetryBanner && <TelemetryBanner />}
-						{!showTelemetryBanner && (
-							<div className={taskHistoryFullLength === 0 ? "mt-10" : undefined}>
-								<KilocodeNotifications />
-							</div>
-						)}
-						<div className="flex flex-grow flex-col justify-center gap-2">
-							<KiloLogo />
-							{/* kilocode_change end */}
-							<p className="text-vscode-editor-foreground leading-normal font-vscode-font-family text-center text-balance max-w-[380px] mx-auto my-0">
-								<Trans
-									i18nKey="chat:about"
-									components={{
-										DocsLink: (
-											<a
-												href={buildDocLink("", "welcome")}
-												target="_blank"
-												rel="noopener noreferrer">
-												the docs
-											</a>
-										),
-									}}
-								/>
-							</p>
-							<IdeaSuggestionsBox /> {/* kilocode_change */}
-							{/*<div className="mb-2.5">
+							{/* kilocode_change start: KilocodeNotifications + Layout fixes */}
+							{showTelemetryBanner && <TelemetryBanner />}
+							{!showTelemetryBanner && (
+								<div className={taskHistoryFullLength === 0 ? "mt-10" : undefined}>
+									<KilocodeNotifications />
+								</div>
+							)}
+							<div className="flex flex-grow flex-col justify-center gap-2">
+								<KiloLogo />
+								{/* kilocode_change end */}
+								<p className="text-vscode-editor-foreground leading-normal font-vscode-font-family text-center text-balance max-w-[380px] mx-auto my-0">
+									<Trans
+										i18nKey="chat:about"
+										components={{
+											DocsLink: (
+												<a
+													href={buildDocLink("", "welcome")}
+													target="_blank"
+													rel="noopener noreferrer">
+													the docs
+												</a>
+											),
+										}}
+									/>
+								</p>
+								<IdeaSuggestionsBox /> {/* kilocode_change */}
+								{/*<div className="mb-2.5">
 								{cloudIsAuthenticated || taskHistory.length < 4 ? <RooTips /> : <RooCloudCTA />}
 							</div> kilocode_change: do not show */}
-							{/* Show the task history preview if expanded and tasks exist */}
-							{taskHistoryFullLength > 0 && isExpanded && (
-								<HistoryPreview taskHistoryVersion={taskHistoryVersion} />
-							)}
-							{/* kilocode_change start: KilocodeNotifications + Layout fixes */}
+								{/* Show the task history preview if expanded and tasks exist */}
+								{taskHistoryFullLength > 0 && isExpanded && (
+									<HistoryPreview taskHistoryVersion={taskHistoryVersion} />
+								)}
+								{/* kilocode_change start: KilocodeNotifications + Layout fixes */}
+							</div>
+							{/* kilocode_change end */}
 						</div>
-						{/* kilocode_change end */}
 					</div>
-				</div>
-			)}
+				)}
 
-			{/*
+				{/*
 			// Flex layout explanation:
 			// 1. Content div above uses flex: "1 1 0" to:
 			//    - Grow to fill available space (flex-grow: 1)
@@ -1772,188 +1774,205 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			//    This ensures it takes its natural height when there's space
 			//    but becomes scrollable when the viewport is too small
 			*/}
-			{/* kilocode_change: added settings toggle for this */}
-			{!task && showAutoApproveMenu && (
-				<div className="mb-1 flex-initial min-h-0">
-					<AutoApproveMenu />
-				</div>
-			)}
+				{/* kilocode_change: added settings toggle for this */}
+				{!task && showAutoApproveMenu && (
+					<div className="mb-1 flex-initial min-h-0">
+						<AutoApproveMenu />
+					</div>
+				)}
 
-			{task && (
-				<>
-					<div className="grow flex flex-col min-h-0" ref={scrollContainerRef}>
-						<div className="flex-auto min-h-0">
-							<Virtuoso
-								ref={virtuosoRef}
-								key={task.ts}
-								className="scrollable grow overflow-y-scroll mb-1"
-								increaseViewportBy={{ top: 400, bottom: 400 }} // kilocode_change: use more modest numbers to see if they reduce gray screen incidence
-								data={groupedMessages}
-								itemContent={itemContent}
-								followOutput={(isAtBottom: boolean) => isAtBottom || stickyFollowRef.current}
-								atBottomStateChange={(isAtBottom: boolean) => {
-									setIsAtBottom(isAtBottom)
-									// Only show the scroll-to-bottom button if not at bottom
-									setShowScrollToBottom(!isAtBottom)
-								}}
-								atBottomThreshold={10}
-								initialTopMostItemIndex={groupedMessages.length - 1}
-							/>
+				{task && (
+					<>
+						<div className="grow flex flex-col min-h-0" ref={scrollContainerRef}>
+							<div className="flex-auto min-h-0">
+								<Virtuoso
+									ref={virtuosoRef}
+									key={task.ts}
+									className="scrollable grow overflow-y-scroll mb-1"
+									increaseViewportBy={{ top: 400, bottom: 400 }} // kilocode_change: use more modest numbers to see if they reduce gray screen incidence
+									data={groupedMessages}
+									itemContent={itemContent}
+									followOutput={(isAtBottom: boolean) => isAtBottom || stickyFollowRef.current}
+									atBottomStateChange={(isAtBottom: boolean) => {
+										setIsAtBottom(isAtBottom)
+										// Only show the scroll-to-bottom button if not at bottom
+										setShowScrollToBottom(!isAtBottom)
+									}}
+									atBottomThreshold={10}
+									initialTopMostItemIndex={groupedMessages.length - 1}
+								/>
+							</div>
 						</div>
-					</div>
-					<div className={`flex-initial min-h-0 ${!areButtonsVisible ? "mb-1" : ""}`}>
-						{/* kilocode_change: added settings toggle for this */}
-						{showAutoApproveMenu && <AutoApproveMenu />}
-					</div>
-					{areButtonsVisible && (
-						<div
-							className={`flex h-9 items-center mb-1 px-[15px] ${
-								showScrollToBottom
-									? "opacity-100"
-									: enableButtons || (isStreaming && !didClickCancel) // kilocode_change
+						<div className={`flex-initial min-h-0 ${!areButtonsVisible ? "mb-1" : ""}`}>
+							{/* kilocode_change: added settings toggle for this */}
+							{showAutoApproveMenu && <AutoApproveMenu />}
+						</div>
+						{areButtonsVisible && (
+							<div
+								className={`flex h-9 items-center mb-1 px-[15px] ${
+									showScrollToBottom
 										? "opacity-100"
-										: "opacity-50"
-							}`}>
-							{showScrollToBottom ? (
-								<StandardTooltip content={t("chat:scrollToBottom")}>
-									<Button
-										className="flex-[2]"
-										onClick={() => {
-											// Engage sticky follow until user scrolls up
-											stickyFollowRef.current = true
-											// Pin immediately to avoid lag during fast streaming
-											scrollToBottomAuto()
-											// Hide button immediately to prevent flash
-											setShowScrollToBottom(false)
-										}}>
-										<span className="codicon codicon-chevron-down"></span>
-									</Button>
-								</StandardTooltip>
-							) : (
-								<>
-									{primaryButtonText && !isStreaming && (
-										<StandardTooltip
-											content={
-												primaryButtonText === t("chat:retry.title")
-													? t("chat:retry.tooltip")
-													: primaryButtonText === t("chat:save.title")
-														? t("chat:save.tooltip")
-														: primaryButtonText === t("chat:approve.title")
-															? t("chat:approve.tooltip")
-															: primaryButtonText === t("chat:runCommand.title")
-																? t("chat:runCommand.tooltip")
-																: primaryButtonText === t("chat:startNewTask.title")
-																	? t("chat:startNewTask.tooltip")
-																	: primaryButtonText === t("chat:resumeTask.title")
-																		? t("chat:resumeTask.tooltip")
+										: enableButtons || (isStreaming && !didClickCancel) // kilocode_change
+											? "opacity-100"
+											: "opacity-50"
+								}`}>
+								{showScrollToBottom ? (
+									<StandardTooltip content={t("chat:scrollToBottom")}>
+										<Button
+											className="flex-[2]"
+											onClick={() => {
+												// Engage sticky follow until user scrolls up
+												stickyFollowRef.current = true
+												// Pin immediately to avoid lag during fast streaming
+												scrollToBottomAuto()
+												// Hide button immediately to prevent flash
+												setShowScrollToBottom(false)
+											}}>
+											<span className="codicon codicon-chevron-down"></span>
+										</Button>
+									</StandardTooltip>
+								) : (
+									<>
+										{primaryButtonText && !isStreaming && (
+											<StandardTooltip
+												content={
+													primaryButtonText === t("chat:retry.title")
+														? t("chat:retry.tooltip")
+														: primaryButtonText === t("chat:save.title")
+															? t("chat:save.tooltip")
+															: primaryButtonText === t("chat:approve.title")
+																? t("chat:approve.tooltip")
+																: primaryButtonText === t("chat:runCommand.title")
+																	? t("chat:runCommand.tooltip")
+																	: primaryButtonText === t("chat:startNewTask.title")
+																		? t("chat:startNewTask.tooltip")
 																		: primaryButtonText ===
-																			  t("chat:proceedAnyways.title")
-																			? t("chat:proceedAnyways.tooltip")
+																			  t("chat:resumeTask.title")
+																			? t("chat:resumeTask.tooltip")
 																			: primaryButtonText ===
-																				  t("chat:proceedWhileRunning.title")
-																				? t("chat:proceedWhileRunning.tooltip")
-																				: undefined
-											}>
-											<Button
-												disabled={!enableButtons}
-												className={secondaryButtonText ? "flex-1 mr-[6px]" : "flex-[2] mr-0"}
-												onClick={() => handlePrimaryButtonClick(inputValue, selectedImages)}>
-												{primaryButtonText}
-											</Button>
-										</StandardTooltip>
-									)}
-									{/* kilocode_change start */}
-									{(secondaryButtonText || isStreaming) && (
-										<StandardTooltip
-											content={
-												isStreaming
-													? t("chat:cancel.tooltip")
-													: secondaryButtonText === t("chat:startNewTask.title")
-														? t("chat:startNewTask.tooltip")
-														: secondaryButtonText === t("chat:reject.title")
-															? t("chat:reject.tooltip")
-															: secondaryButtonText === t("chat:terminate.title")
-																? t("chat:terminate.tooltip")
-																: secondaryButtonText === t("chat:killCommand.title")
-																	? t("chat:killCommand.tooltip")
-																	: undefined
-											}>
-											<Button
-												disabled={!enableButtons && !(isStreaming && !didClickCancel)}
-												className={isStreaming ? "flex-[2] ml-0" : "flex-1 ml-[6px]"}
-												onClick={() => handleSecondaryButtonClick(inputValue, selectedImages)}>
-												{isStreaming ? t("chat:cancel.title") : secondaryButtonText}
-											</Button>
-										</StandardTooltip>
-									)}
-									{/* kilocode_change end */}
-								</>
-							)}
-						</div>
-					)}
-				</>
-			)}
+																				  t("chat:proceedAnyways.title")
+																				? t("chat:proceedAnyways.tooltip")
+																				: primaryButtonText ===
+																					  t(
+																							"chat:proceedWhileRunning.title",
+																					  )
+																					? t(
+																							"chat:proceedWhileRunning.tooltip",
+																						)
+																					: undefined
+												}>
+												<Button
+													disabled={!enableButtons}
+													className={
+														secondaryButtonText ? "flex-1 mr-[6px]" : "flex-[2] mr-0"
+													}
+													onClick={() =>
+														handlePrimaryButtonClick(inputValue, selectedImages)
+													}>
+													{primaryButtonText}
+												</Button>
+											</StandardTooltip>
+										)}
+										{/* kilocode_change start */}
+										{(secondaryButtonText || isStreaming) && (
+											<StandardTooltip
+												content={
+													isStreaming
+														? t("chat:cancel.tooltip")
+														: secondaryButtonText === t("chat:startNewTask.title")
+															? t("chat:startNewTask.tooltip")
+															: secondaryButtonText === t("chat:reject.title")
+																? t("chat:reject.tooltip")
+																: secondaryButtonText === t("chat:terminate.title")
+																	? t("chat:terminate.tooltip")
+																	: secondaryButtonText ===
+																		  t("chat:killCommand.title")
+																		? t("chat:killCommand.tooltip")
+																		: undefined
+												}>
+												<Button
+													disabled={!enableButtons && !(isStreaming && !didClickCancel)}
+													className={isStreaming ? "flex-[2] ml-0" : "flex-1 ml-[6px]"}
+													onClick={() =>
+														handleSecondaryButtonClick(inputValue, selectedImages)
+													}>
+													{isStreaming ? t("chat:cancel.title") : secondaryButtonText}
+												</Button>
+											</StandardTooltip>
+										)}
+										{/* kilocode_change end */}
+									</>
+								)}
+							</div>
+						)}
+					</>
+				)}
 
-			<QueuedMessages
-				queue={messageQueue}
-				onRemove={(index) => {
-					if (messageQueue[index]) {
-						vscode.postMessage({ type: "removeQueuedMessage", text: messageQueue[index].id })
-					}
-				}}
-				onUpdate={(index, newText) => {
-					if (messageQueue[index]) {
-						vscode.postMessage({
-							type: "editQueuedMessage",
-							payload: { id: messageQueue[index].id, text: newText, images: messageQueue[index].images },
-						})
-					}
-				}}
-			/>
-			<ChatTextArea
-				ref={textAreaRef}
-				inputValue={inputValue}
-				setInputValue={setInputValue}
-				sendingDisabled={sendingDisabled || isProfileDisabled}
-				selectApiConfigDisabled={sendingDisabled && clineAsk !== "api_req_failed"}
-				placeholderText={placeholderText}
-				selectedImages={selectedImages}
-				setSelectedImages={setSelectedImages}
-				onSend={() => handleSendMessage(inputValue, selectedImages)}
-				onSelectImages={selectImages}
-				shouldDisableImages={shouldDisableImages}
-				onHeightChange={() => {
-					if (isAtBottom) {
-						scrollToBottomAuto()
-					}
-				}}
-				mode={mode}
-				setMode={setMode}
-				modeShortcutText={modeShortcutText}
-				sendMessageOnEnter={sendMessageOnEnter} // kilocode_change
-				showBrowserDockToggle={showBrowserDockToggle}
-			/>
-			{/* kilocode_change: added settings toggle the profile and model selection */}
-			<BottomControls showApiConfig />
-			{/* kilocode_change: end */}
+				<QueuedMessages
+					queue={messageQueue}
+					onRemove={(index) => {
+						if (messageQueue[index]) {
+							vscode.postMessage({ type: "removeQueuedMessage", text: messageQueue[index].id })
+						}
+					}}
+					onUpdate={(index, newText) => {
+						if (messageQueue[index]) {
+							vscode.postMessage({
+								type: "editQueuedMessage",
+								payload: {
+									id: messageQueue[index].id,
+									text: newText,
+									images: messageQueue[index].images,
+								},
+							})
+						}
+					}}
+				/>
+				<ChatTextArea
+					ref={textAreaRef}
+					inputValue={inputValue}
+					setInputValue={setInputValue}
+					sendingDisabled={sendingDisabled || isProfileDisabled}
+					selectApiConfigDisabled={sendingDisabled && clineAsk !== "api_req_failed"}
+					placeholderText={placeholderText}
+					selectedImages={selectedImages}
+					setSelectedImages={setSelectedImages}
+					onSend={() => handleSendMessage(inputValue, selectedImages)}
+					onSelectImages={selectImages}
+					shouldDisableImages={shouldDisableImages}
+					onHeightChange={() => {
+						if (isAtBottom) {
+							scrollToBottomAuto()
+						}
+					}}
+					mode={mode}
+					setMode={setMode}
+					modeShortcutText={modeShortcutText}
+					sendMessageOnEnter={sendMessageOnEnter} // kilocode_change
+					showBrowserDockToggle={showBrowserDockToggle}
+				/>
+				{/* kilocode_change: added settings toggle the profile and model selection */}
+				<BottomControls showApiConfig />
+				{/* kilocode_change: end */}
 
-			{/* kilocode_change: disable {isProfileDisabled && (
+				{/* kilocode_change: disable {isProfileDisabled && (
 				<div className="px-3">
 					<ProfileViolationWarning />
 				</div>
 			)} */}
 
-			<div id="roo-portal" />
-			{/* kilocode_change: disable  */}
-			{/* <CloudUpsellDialog open={isUpsellOpen} onOpenChange={closeUpsell} onConnect={handleConnect} /> */}
+				<div id="roo-portal" />
+				{/* kilocode_change: disable  */}
+				{/* <CloudUpsellDialog open={isUpsellOpen} onOpenChange={closeUpsell} onConnect={handleConnect} /> */}
 
-			{/* kilocode_change: Review mode scope selector */}
-			<ReviewScopeSelector
-				open={showReviewScopeSelector}
-				onOpenChange={setShowReviewScopeSelector}
-				scopeInfo={reviewScopeInfo}
-			/>
-		</div>
+				{/* kilocode_change: Review mode scope selector */}
+				<ReviewScopeSelector
+					open={showReviewScopeSelector}
+					onOpenChange={setShowReviewScopeSelector}
+					scopeInfo={reviewScopeInfo}
+				/>
+			</div>
+		</ThinkingBlockSyncProvider>
 	)
 }
 

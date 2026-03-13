@@ -814,6 +814,7 @@ export interface WebviewMessage {
 		| "snoozeAutocomplete" // kilocode_change
 		| "autoApprovalEnabled"
 		| "yoloMode" // kilocode_change
+		| "alwaysAllowAllCommands" // kilocode_change: bypass allowedCommands check
 		| "updateCustomMode"
 		| "deleteCustomMode"
 		| "setopenAiCustomModelInfo"
@@ -885,6 +886,7 @@ export interface WebviewMessage {
 		| "showDiffStats" // kilocode_change
 		| "hideCostBelowThreshold" // kilocode_change
 		| "toggleTaskFavorite" // kilocode_change
+		| "setTaskCustomName" // kilocode_change: Task renaming feature
 		| "fixMermaidSyntax" // kilocode_change
 		| "mermaidFixResponse" // kilocode_change
 		| "openGlobalKeybindings" // kilocode_change
@@ -985,6 +987,7 @@ export interface WebviewMessage {
 		| "refreshSkills"
 		| "reviewScopeSelected" // kilocode_change: Review mode scope selection
 	text?: string
+	customName?: string // kilocode_change: For setTaskCustomName message
 	suggestionLength?: number // kilocode_change: Length of accepted suggestion for telemetry
 	completionRequestId?: string // kilocode_change
 	shareId?: string // kilocode_change - for sessionFork

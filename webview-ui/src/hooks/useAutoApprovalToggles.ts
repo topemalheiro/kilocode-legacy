@@ -16,6 +16,7 @@ export function useAutoApprovalToggles() {
 		alwaysAllowModeSwitch,
 		alwaysAllowSubtasks,
 		alwaysAllowFollowupQuestions,
+		alwaysAllowAllCommands,
 	} = useExtensionState()
 
 	const toggles = useMemo(
@@ -29,6 +30,7 @@ export function useAutoApprovalToggles() {
 			alwaysAllowModeSwitch,
 			alwaysAllowSubtasks,
 			alwaysAllowFollowupQuestions,
+			alwaysAllowAllCommands,
 		}),
 		[
 			alwaysAllowReadOnly,
@@ -40,6 +42,7 @@ export function useAutoApprovalToggles() {
 			alwaysAllowModeSwitch,
 			alwaysAllowSubtasks,
 			alwaysAllowFollowupQuestions,
+			alwaysAllowAllCommands,
 		],
 	)
 

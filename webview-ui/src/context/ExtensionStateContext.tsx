@@ -100,6 +100,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	setHasCompletedOnboarding: (value: boolean) => void // kilocode_change
 	alwaysAllowFollowupQuestions: boolean // New property for follow-up questions auto-approve
 	setAlwaysAllowFollowupQuestions: (value: boolean) => void // Setter for the new property
+	alwaysAllowAllCommands?: boolean // kilocode_change: bypass allowedCommands check
+	setAlwaysAllowAllCommands: (value: boolean) => void // kilocode_change
 	followupAutoApproveTimeoutMs: number | undefined // Timeout in ms for auto-approving follow-up questions
 	setFollowupAutoApproveTimeoutMs: (value: number) => void // Setter for the timeout
 	condensingApiConfigId?: string
@@ -223,6 +225,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	setIncludeCurrentTime: (value: boolean) => void
 	includeCurrentCost?: boolean
 	setIncludeCurrentCost: (value: boolean) => void
+	autoExpandSubsequentThinking?: boolean // kilocode_change
+	setAutoExpandSubsequentThinking: (value: boolean) => void // kilocode_change
 }
 
 export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined)
@@ -385,6 +389,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	// kilocode_change end
 	const [marketplaceItems, setMarketplaceItems] = useState<any[]>([])
 	const [alwaysAllowFollowupQuestions, setAlwaysAllowFollowupQuestions] = useState(false) // Add state for follow-up questions auto-approve
+	const [alwaysAllowAllCommands, setAlwaysAllowAllCommands] = useState(false) // kilocode_change: bypass allowedCommands check
 	const [followupAutoApproveTimeoutMs, setFollowupAutoApproveTimeoutMs] = useState<number | undefined>(undefined) // Will be set from global settings
 	const [marketplaceInstalledMetadata, setMarketplaceInstalledMetadata] = useState<MarketplaceInstalledMetadata>({
 		project: {},
@@ -394,6 +399,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	const [prevCloudIsAuthenticated, setPrevCloudIsAuthenticated] = useState(false)
 	const [includeCurrentTime, setIncludeCurrentTime] = useState(true)
 	const [includeCurrentCost, setIncludeCurrentCost] = useState(true)
+	const [autoExpandSubsequentThinking, setAutoExpandSubsequentThinking] = useState(false) // kilocode_change
 
 	const setListApiConfigMeta = useCallback(
 		(value: ProviderSettingsEntry[]) => setState((prevState) => ({ ...prevState, listApiConfigMeta: value })),
@@ -423,6 +429,10 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					if ((newState as any).alwaysAllowFollowupQuestions !== undefined) {
 						setAlwaysAllowFollowupQuestions((newState as any).alwaysAllowFollowupQuestions)
 					}
+					// Update alwaysAllowAllCommands if present in state message // kilocode_change
+					if ((newState as any).alwaysAllowAllCommands !== undefined) {
+						setAlwaysAllowAllCommands((newState as any).alwaysAllowAllCommands)
+					}
 					// Update followupAutoApproveTimeoutMs if present in state message
 					if ((newState as any).followupAutoApproveTimeoutMs !== undefined) {
 						setFollowupAutoApproveTimeoutMs((newState as any).followupAutoApproveTimeoutMs)
@@ -438,6 +448,10 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					// Update includeCurrentCost if present in state message
 					if ((newState as any).includeCurrentCost !== undefined) {
 						setIncludeCurrentCost((newState as any).includeCurrentCost)
+					}
+					// Update autoExpandSubsequentThinking if present in state message // kilocode_change
+					if ((newState as any).autoExpandSubsequentThinking !== undefined) {
+						setAutoExpandSubsequentThinking((newState as any).autoExpandSubsequentThinking)
 					}
 					// Handle marketplace data if present in state message
 					if (newState.marketplaceItems !== undefined) {
@@ -607,6 +621,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		profileThresholds: state.profileThresholds ?? {},
 		alwaysAllowFollowupQuestions,
 		followupAutoApproveTimeoutMs,
+		alwaysAllowAllCommands, // kilocode_change
 		remoteControlEnabled: state.remoteControlEnabled ?? false,
 		taskSyncEnabled: state.taskSyncEnabled,
 		featureRoomoteControlEnabled: state.featureRoomoteControlEnabled ?? false,
@@ -629,6 +644,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setAlwaysAllowFollowupQuestions,
 		setFollowupAutoApproveTimeoutMs: (value) =>
 			setState((prevState) => ({ ...prevState, followupAutoApproveTimeoutMs: value })),
+		setAlwaysAllowAllCommands: (value) =>
+			setState((prevState) => ({ ...prevState, alwaysAllowAllCommands: value })), // kilocode_change
 		setShowAnnouncement: (value) => setState((prevState) => ({ ...prevState, shouldShowAnnouncement: value })),
 		setAllowedCommands: (value) => setState((prevState) => ({ ...prevState, allowedCommands: value })),
 		setDeniedCommands: (value) => setState((prevState) => ({ ...prevState, deniedCommands: value })),
@@ -774,6 +791,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setIncludeCurrentTime,
 		includeCurrentCost,
 		setIncludeCurrentCost,
+		autoExpandSubsequentThinking, // kilocode_change
+		setAutoExpandSubsequentThinking, // kilocode_change
 	}
 
 	return <ExtensionStateContext.Provider value={contextValue}>{children}</ExtensionStateContext.Provider>

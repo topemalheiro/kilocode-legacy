@@ -2213,6 +2213,7 @@ export class ClineProvider
 			alwaysAllowWriteProtected,
 			alwaysAllowDelete, // kilocode_change
 			alwaysAllowExecute,
+			alwaysAllowAllCommands, // kilocode_change: bypass allowedCommands check
 			allowedCommands,
 			deniedCommands,
 			alwaysAllowBrowser,
@@ -2281,6 +2282,7 @@ export class ClineProvider
 			terminalCompressProgressBar,
 			historyPreviewCollapsed,
 			reasoningBlockCollapsed,
+			autoExpandSubsequentThinking,
 			enterBehavior,
 			cloudUserInfo,
 			cloudIsAuthenticated,
@@ -2385,6 +2387,7 @@ export class ClineProvider
 			alwaysAllowWriteProtected: alwaysAllowWriteProtected ?? false,
 			alwaysAllowDelete: alwaysAllowDelete ?? false, // kilocode_change
 			alwaysAllowExecute: alwaysAllowExecute ?? false,
+			alwaysAllowAllCommands: alwaysAllowAllCommands ?? false, // kilocode_change
 			alwaysAllowBrowser: alwaysAllowBrowser ?? false,
 			alwaysAllowMcp: alwaysAllowMcp ?? false,
 			alwaysAllowModeSwitch: alwaysAllowModeSwitch ?? false,
@@ -2460,7 +2463,7 @@ export class ClineProvider
 			telemetryKey,
 			machineId,
 			showRooIgnoredFiles: showRooIgnoredFiles ?? false,
-			showAutoApproveMenu: showAutoApproveMenu ?? false, // kilocode_change
+			showAutoApproveMenu: showAutoApproveMenu ?? true, // kilocode_change
 			showTaskTimeline: showTaskTimeline ?? true, // kilocode_change
 			sendMessageOnEnter: sendMessageOnEnter ?? true, // kilocode_change
 			showTimestamps: showTimestamps ?? true, // kilocode_change
@@ -2478,6 +2481,7 @@ export class ClineProvider
 			hasSystemPromptOverride,
 			historyPreviewCollapsed: historyPreviewCollapsed ?? false,
 			reasoningBlockCollapsed: reasoningBlockCollapsed ?? true,
+			autoExpandSubsequentThinking: autoExpandSubsequentThinking ?? false,
 			enterBehavior: enterBehavior ?? "send",
 			cloudUserInfo,
 			cloudIsAuthenticated: cloudIsAuthenticated ?? false,
@@ -2707,6 +2711,7 @@ export class ClineProvider
 			alwaysAllowWriteProtected: stateValues.alwaysAllowWriteProtected ?? false,
 			alwaysAllowDelete: stateValues.alwaysAllowDelete ?? false, // kilocode_change
 			alwaysAllowExecute: stateValues.alwaysAllowExecute ?? true,
+			alwaysAllowAllCommands: stateValues.alwaysAllowAllCommands ?? false, // kilocode_change
 			alwaysAllowBrowser: stateValues.alwaysAllowBrowser ?? true,
 			alwaysAllowMcp: stateValues.alwaysAllowMcp ?? true,
 			alwaysAllowModeSwitch: stateValues.alwaysAllowModeSwitch ?? true,
@@ -2784,7 +2789,7 @@ export class ClineProvider
 			browserToolEnabled: stateValues.browserToolEnabled ?? true,
 			telemetrySetting: getEffectiveTelemetrySetting(stateValues.telemetrySetting), // kilocode_change
 			showRooIgnoredFiles: stateValues.showRooIgnoredFiles ?? false,
-			showAutoApproveMenu: stateValues.showAutoApproveMenu ?? false, // kilocode_change
+			showAutoApproveMenu: stateValues.showAutoApproveMenu ?? true, // kilocode_change
 			showTaskTimeline: stateValues.showTaskTimeline ?? true, // kilocode_change
 			sendMessageOnEnter: stateValues.sendMessageOnEnter ?? true, // kilocode_change
 			showTimestamps: stateValues.showTimestamps ?? true, // kilocode_change
@@ -2802,6 +2807,7 @@ export class ClineProvider
 			fastApplyApiProvider: stateValues.fastApplyApiProvider ?? "current", // kilocode_change: Fast Apply model api config id
 			historyPreviewCollapsed: stateValues.historyPreviewCollapsed ?? false,
 			reasoningBlockCollapsed: stateValues.reasoningBlockCollapsed ?? true,
+			autoExpandSubsequentThinking: stateValues.autoExpandSubsequentThinking ?? false,
 			enterBehavior: stateValues.enterBehavior ?? "send",
 			cloudUserInfo,
 			cloudIsAuthenticated,
@@ -3656,6 +3662,7 @@ export class ClineProvider
 						autoApprovalEnabled: !!state.autoApprovalEnabled,
 						alwaysAllowBrowser: !!state.alwaysAllowBrowser,
 						alwaysAllowExecute: !!state.alwaysAllowExecute,
+						alwaysAllowAllCommands: !!state.alwaysAllowAllCommands, // kilocode_change
 						alwaysAllowFollowupQuestions: !!state.alwaysAllowFollowupQuestions,
 						alwaysAllowMcp: !!state.alwaysAllowMcp,
 						alwaysAllowModeSwitch: !!state.alwaysAllowModeSwitch,
@@ -3874,6 +3881,20 @@ Here is the project's README to help you get started:\n\n${mcpDetails.readmeCont
 		const updatedHistory = history.map((item) => {
 			if (item.id === id) {
 				return { ...item, isFavorited: !item.isFavorited }
+			}
+			return item
+		})
+		await this.updateGlobalState("taskHistory", updatedHistory)
+		this.kiloCodeTaskHistoryVersion++
+		await this.postStateToWebview()
+	}
+
+	// Add method for setting task custom name (renaming)
+	async setTaskCustomName(id: string, customName: string) {
+		const history = this.getGlobalState("taskHistory") ?? []
+		const updatedHistory = history.map((item) => {
+			if (item.id === id) {
+				return { ...item, customName }
 			}
 			return item
 		})

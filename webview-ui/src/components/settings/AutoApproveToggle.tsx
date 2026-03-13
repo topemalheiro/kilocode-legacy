@@ -15,6 +15,7 @@ type AutoApproveToggles = Pick<
 	| "alwaysAllowSubtasks"
 	| "alwaysAllowExecute"
 	| "alwaysAllowFollowupQuestions"
+	| "alwaysAllowAllCommands" // kilocode_change: bypass allowedCommands check
 >
 
 export type AutoApproveSetting = keyof AutoApproveToggles
@@ -93,6 +94,15 @@ export const autoApproveSettingsConfig: Record<AutoApproveSetting, AutoApproveCo
 		icon: "question",
 		testId: "always-allow-followup-questions-toggle",
 	},
+	// kilocode_change start
+	alwaysAllowAllCommands: {
+		key: "alwaysAllowAllCommands",
+		labelKey: "settings:autoApprove.bypassAllowed.label",
+		descriptionKey: "settings:autoApprove.bypassAllowed.description",
+		icon: "zap",
+		testId: "always-allow-all-commands-toggle",
+	},
+	// kilocode_change end
 }
 
 type AutoApproveToggleProps = AutoApproveToggles & {
