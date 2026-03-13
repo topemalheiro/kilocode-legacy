@@ -32,6 +32,19 @@ export const setTtsPlaybackSpeed = (newSpeed: number) => {
 
 let voice = "male" // Default to male voice
 
+// Map UI voice names to actual Windows SAPI voice names
+const getWindowsVoiceName = (voiceName: string): string => {
+	// Windows SAPI voices: "Microsoft David" (male), "Microsoft Zira" (female)
+	// Also check for installed voices - some systems have "David" or "Zira" only
+	if (voiceName === "male") {
+		return "Microsoft David"
+	} else if (voiceName === "female") {
+		return "Microsoft Zira"
+	}
+	// Return as-is if already a proper voice name
+	return voiceName
+}
+
 export const setTtsVoice = (newVoice: string) => {
 	console.log("[TTS] setTtsVoice called, voice:", newVoice)
 	voice = newVoice
@@ -80,10 +93,12 @@ const playTtsInternal = async (message: string): Promise<void> => {
 		currentSayInstance = say
 		currentResolve = resolve
 
-		console.log("[TTS] Starting playback, voice:", voice, "speed:", speed)
+		// Convert "male"/"female" to actual Windows voice names
+		const windowsVoice = getWindowsVoiceName(voice)
+		console.log("[TTS] Starting playback, voice:", voice, "-> windowsVoice:", windowsVoice, "speed:", speed)
 
 		try {
-			say.speak(message, voice, speed, (err) => {
+			say.speak(message, windowsVoice, speed, (err) => {
 				console.log("[TTS] Speak finished, err:", err)
 
 				currentSayInstance = undefined
