@@ -518,6 +518,8 @@ export type ExtensionState = Pick<
 	| "remoteBrowserHost"
 	| "ttsEnabled"
 	| "ttsSpeed"
+	| "ttsPlaybackSpeed" // kilocode_change
+	| "ttsVoice" // kilocode_change
 	| "soundEnabled"
 	| "soundVolume"
 	| "maxConcurrentFileReads"
@@ -768,6 +770,8 @@ export interface WebviewMessage {
 		| "stopTts"
 		| "ttsEnabled"
 		| "ttsSpeed"
+		| "ttsPlaybackSpeed" // kilocode_change
+		| "ttsVoice" // kilocode_change
 		| "openKeyboardShortcuts"
 		| "openMcpSettings"
 		| "openProjectMcpSettings"

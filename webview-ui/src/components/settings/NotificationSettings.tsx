@@ -13,18 +13,36 @@ import { Button } from "vscrui"
 type NotificationSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	ttsEnabled?: boolean
 	ttsSpeed?: number
+	ttsPlaybackSpeed?: number // kilocode_change
+	ttsVoice?: string // kilocode_change
 	soundEnabled?: boolean
 	soundVolume?: number
 	systemNotificationsEnabled?: boolean // kilocode_change
 	areSettingsCommitted?: boolean // kilocode_change
 	setCachedStateField: SetCachedStateField<
-		"ttsEnabled" | "ttsSpeed" | "soundEnabled" | "soundVolume" | "systemNotificationsEnabled"
+		| "ttsEnabled"
+		| "ttsSpeed"
+		| "ttsPlaybackSpeed"
+		| "ttsVoice"
+		| "soundEnabled"
+		| "soundVolume"
+		| "systemNotificationsEnabled"
 	>
 }
+
+// MiniMax TTS voice options
+const TTS_VOICES = [
+	{ id: "male", name: "Male (English)" },
+	{ id: "female", name: "Female (English)" },
+	{ id: "male_cn", name: "Male (Chinese)" },
+	{ id: "female_cn", name: "Female (Chinese)" },
+]
 
 export const NotificationSettings = ({
 	ttsEnabled,
 	ttsSpeed,
+	ttsPlaybackSpeed, // kilocode_change
+	ttsVoice, // kilocode_change
 	soundEnabled,
 	soundVolume,
 	systemNotificationsEnabled, // kilocode_change
@@ -78,15 +96,30 @@ export const NotificationSettings = ({
 							</label>
 							<div className="flex items-center gap-2">
 								<Slider
-									min={0.1}
-									max={2.0}
-									step={0.01}
-									value={[ttsSpeed ?? 1.0]}
-									onValueChange={([value]) => setCachedStateField("ttsSpeed", value)}
+									min={0.5}
+									max={3.5}
+									step={0.25}
+									value={[ttsPlaybackSpeed ?? 1.5]}
+									onValueChange={([value]) => setCachedStateField("ttsPlaybackSpeed", value)}
 									data-testid="tts-speed-slider"
 								/>
-								<span className="w-10">{((ttsSpeed ?? 1.0) * 100).toFixed(0)}%</span>
+								<span className="w-12">{((ttsPlaybackSpeed ?? 1.5) * 100).toFixed(0)}%</span>
 							</div>
+						</SearchableSetting>
+
+						{/* Voice Selection - kilocode_change */}
+						<SearchableSetting settingId="notifications-tts-voice" section="notifications" label="Voice">
+							<label className="block font-medium mb-1">Voice</label>
+							<select
+								value={ttsVoice ?? "female"}
+								onChange={(e) => setCachedStateField("ttsVoice", e.target.value)}
+								className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded">
+								{TTS_VOICES.map((voice) => (
+									<option key={voice.id} value={voice.id}>
+										{voice.name}
+									</option>
+								))}
+							</select>
 						</SearchableSetting>
 					</div>
 				)}

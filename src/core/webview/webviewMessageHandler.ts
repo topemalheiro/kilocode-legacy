@@ -66,7 +66,7 @@ import { getTheme } from "../../integrations/theme/getTheme"
 import { discoverChromeHostUrl, tryChromeHostUrl } from "../../services/browser/browserDiscovery"
 import { searchWorkspaceFiles } from "../../services/search/file-search"
 import { fileExistsAtPath } from "../../utils/fs"
-import { playTts, setTtsEnabled, setTtsSpeed, stopTts } from "../../utils/tts"
+import { playTts, setTtsEnabled, setTtsSpeed, setTtsVoice, stopTts } from "../../utils/tts"
 import { showSystemNotification } from "../../integrations/notifications" // kilocode_change
 import { singleCompletionHandler } from "../../utils/single-completion-handler" // kilocode_change
 import { searchCommits } from "../../utils/git"
@@ -602,6 +602,8 @@ export const webviewMessageHandler = async (
 			provider.isViewLaunched = true
 			break
 		case "newTask":
+			// Stop any playing TTS when user sends a new message
+			stopTts()
 			// Initializing new instance of Cline will make sure that any
 			// agentically running promises in old instance don't affect our new
 			// task. This essentially creates a fresh slate for the new task.
@@ -1832,6 +1834,18 @@ export const webviewMessageHandler = async (
 			const ttsSpeed = message.value ?? 1.0
 			await updateGlobalState("ttsSpeed", ttsSpeed)
 			setTtsSpeed(ttsSpeed)
+			await provider.postStateToWebview()
+			break
+		case "ttsPlaybackSpeed":
+			const ttsPlaybackSpeed = typeof message.value === "number" ? message.value : 1.5
+			await updateGlobalState("ttsPlaybackSpeed", ttsPlaybackSpeed)
+			setTtsSpeed(ttsPlaybackSpeed)
+			await provider.postStateToWebview()
+			break
+		case "ttsVoice":
+			const ttsVoice = typeof message.value === "string" ? message.value : "female"
+			await updateGlobalState("ttsVoice", ttsVoice)
+			setTtsVoice(ttsVoice)
 			await provider.postStateToWebview()
 			break
 		case "playTts":

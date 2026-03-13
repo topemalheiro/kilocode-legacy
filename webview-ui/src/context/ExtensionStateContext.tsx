@@ -146,6 +146,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	setTerminalZdotdir: (value: boolean) => void
 	setTtsEnabled: (value: boolean) => void
 	setTtsSpeed: (value: number) => void
+	setTtsPlaybackSpeed: (value: number) => void // kilocode_change
+	setTtsVoice: (value: string) => void // kilocode_change
 	setDiffEnabled: (value: boolean) => void
 	setEnableCheckpoints: (value: boolean) => void
 	checkpointTimeout: number
@@ -266,6 +268,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		isBrowserSessionActive: false,
 		ttsEnabled: false,
 		ttsSpeed: 1.0,
+		ttsPlaybackSpeed: 1.5, // kilocode_change
+		ttsVoice: "female", // kilocode_change
 		diffEnabled: false,
 		enableCheckpoints: true,
 		checkpointTimeout: DEFAULT_CHECKPOINT_TIMEOUT_SECONDS, // Default to 15 seconds
@@ -609,6 +613,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		commands,
 		soundVolume: state.soundVolume,
 		ttsSpeed: state.ttsSpeed,
+		ttsPlaybackSpeed: state.ttsPlaybackSpeed, // kilocode_change
+		ttsVoice: state.ttsVoice, // kilocode_change
 		fuzzyMatchThreshold: state.fuzzyMatchThreshold,
 		writeDelayMs: state.writeDelayMs,
 		screenshotQuality: state.screenshotQuality,
@@ -655,6 +661,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setSoundVolume: (value) => setState((prevState) => ({ ...prevState, soundVolume: value })),
 		setTtsEnabled: (value) => setState((prevState) => ({ ...prevState, ttsEnabled: value })),
 		setTtsSpeed: (value) => setState((prevState) => ({ ...prevState, ttsSpeed: value })),
+		setTtsPlaybackSpeed: (value) => setState((prevState) => ({ ...prevState, ttsPlaybackSpeed: value })), // kilocode_change
+		setTtsVoice: (value) => setState((prevState) => ({ ...prevState, ttsVoice: value })), // kilocode_change
 		setDiffEnabled: (value) => setState((prevState) => ({ ...prevState, diffEnabled: value })),
 		setEnableCheckpoints: (value) => setState((prevState) => ({ ...prevState, enableCheckpoints: value })),
 		setCheckpointTimeout: (value) => setState((prevState) => ({ ...prevState, checkpointTimeout: value })),

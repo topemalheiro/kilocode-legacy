@@ -206,6 +206,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 		soundEnabled,
 		ttsEnabled,
 		ttsSpeed,
+		ttsPlaybackSpeed, // kilocode_change
+		ttsVoice, // kilocode_change
 		soundVolume,
 		telemetrySetting,
 		terminalOutputLineLimit,
@@ -565,6 +567,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 					soundVolume: soundVolume ?? 0.5,
 					ttsEnabled,
 					ttsSpeed,
+					ttsPlaybackSpeed, // kilocode_change
+					ttsVoice, // kilocode_change
 					diffEnabled: diffEnabled ?? true,
 					enableCheckpoints: enableCheckpoints ?? false,
 					checkpointTimeout: checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
@@ -618,6 +622,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 			})
 			vscode.postMessage({ type: "ttsEnabled", bool: ttsEnabled })
 			vscode.postMessage({ type: "ttsSpeed", value: ttsSpeed })
+			vscode.postMessage({ type: "ttsPlaybackSpeed", value: ttsPlaybackSpeed }) // kilocode_change
+			vscode.postMessage({ type: "ttsVoice", text: ttsVoice }) // kilocode_change
 			vscode.postMessage({ type: "terminalCommandApiConfigId", text: terminalCommandApiConfigId || "" }) // kilocode_change
 			vscode.postMessage({ type: "showAutoApproveMenu", bool: showAutoApproveMenu }) // kilocode_change
 			vscode.postMessage({ type: "yoloMode", bool: yoloMode }) // kilocode_change
@@ -1199,6 +1205,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 							<NotificationSettings
 								ttsEnabled={ttsEnabled}
 								ttsSpeed={ttsSpeed}
+								ttsPlaybackSpeed={ttsPlaybackSpeed} // kilocode_change
+								ttsVoice={ttsVoice} // kilocode_change
 								soundEnabled={soundEnabled}
 								soundVolume={soundVolume}
 								systemNotificationsEnabled={systemNotificationsEnabled}

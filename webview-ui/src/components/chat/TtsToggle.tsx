@@ -4,16 +4,16 @@ import { Button } from "@src/components/ui"
 import { StandardTooltip } from "@src/components/ui"
 import { Popover, PopoverContent } from "@src/components/ui"
 import { vscode } from "@src/utils/vscode"
+import { useExtensionState } from "@src/context/ExtensionStateContext"
 
 interface TtsToggleProps {
 	className?: string
 }
 
 const TtsToggle = ({ className }: TtsToggleProps) => {
-	const [ttsEnabled, setTtsEnabled] = useState(true)
+	const { ttsEnabled, ttsPlaybackSpeed, ttsVoice, setTtsEnabled, setTtsPlaybackSpeed, setTtsVoice } =
+		useExtensionState()
 	const [showSettings, setShowSettings] = useState(false)
-	const [playbackSpeed, setPlaybackSpeed] = useState(1.5) // Default 150%
-	const [selectedVoice, setSelectedVoice] = useState("female") // Default female
 
 	// MiniMax TTS voices - you can expand this list
 	const voices = [
@@ -27,17 +27,23 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 		const newValue = !ttsEnabled
 		setTtsEnabled(newValue)
 		vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsEnabled: newValue } })
-	}, [ttsEnabled])
+	}, [ttsEnabled, setTtsEnabled])
 
-	const handleSpeedChange = useCallback((speed: number) => {
-		setPlaybackSpeed(speed)
-		vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsPlaybackSpeed: speed } })
-	}, [])
+	const handleSpeedChange = useCallback(
+		(speed: number) => {
+			setTtsPlaybackSpeed(speed)
+			vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsPlaybackSpeed: speed } })
+		},
+		[setTtsPlaybackSpeed],
+	)
 
-	const handleVoiceChange = useCallback((voice: string) => {
-		setSelectedVoice(voice)
-		vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsVoice: voice } })
-	}, [])
+	const handleVoiceChange = useCallback(
+		(voice: string) => {
+			setTtsVoice(voice)
+			vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsVoice: voice } })
+		},
+		[setTtsVoice],
+	)
 
 	return (
 		<Popover open={showSettings} onOpenChange={setShowSettings}>
@@ -58,20 +64,20 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 					{/* Playback Speed */}
 					<div className="flex flex-col gap-1">
 						<label className="text-xs text-vscode-descriptionForeground">
-							Speed: {Math.round(playbackSpeed * 100)}%
+							Speed: {Math.round((ttsPlaybackSpeed ?? 1.5) * 100)}%
 						</label>
 						<input
 							type="range"
 							min={0.5}
-							max={3}
+							max={3.5}
 							step={0.25}
-							value={playbackSpeed}
+							value={ttsPlaybackSpeed ?? 1.5}
 							onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
 							className="w-full h-2 bg-vscode-progressBackground rounded-full appearance-none cursor-pointer accent-vscode-button-background"
 						/>
 						<div className="flex justify-between text-xs text-vscode-descriptionForeground">
 							<span>50%</span>
-							<span>300%</span>
+							<span>350%</span>
 						</div>
 					</div>
 
@@ -79,7 +85,7 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 					<div className="flex flex-col gap-1">
 						<label className="text-xs text-vscode-descriptionForeground">Voice</label>
 						<select
-							value={selectedVoice}
+							value={ttsVoice ?? "female"}
 							onChange={(e) => handleVoiceChange(e.target.value)}
 							className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded">
 							{voices.map((voice) => (

@@ -80,7 +80,7 @@ import { SessionManager } from "../../shared/kilocode/cli-sessions/core/SessionM
 import { SkillsManager } from "../../services/skills/SkillsManager"
 
 import { fileExistsAtPath } from "../../utils/fs"
-import { setTtsEnabled, setTtsSpeed } from "../../utils/tts"
+import { setTtsEnabled, setTtsSpeed, setTtsVoice } from "../../utils/tts"
 import { getWorkspaceGitInfo } from "../../utils/git"
 import { getWorkspacePath } from "../../utils/path"
 import { OrganizationAllowListViolationError } from "../../utils/errors"
@@ -863,6 +863,10 @@ export class ClineProvider
 
 		this.getState().then(({ ttsSpeed }) => {
 			setTtsSpeed(ttsSpeed ?? 1)
+		})
+
+		this.getState().then(({ ttsVoice }) => {
+			setTtsVoice(ttsVoice ?? "Daniel")
 		})
 
 		// Set up webview options with proper resource roots
@@ -2230,6 +2234,8 @@ export class ClineProvider
 			soundEnabled,
 			ttsEnabled,
 			ttsSpeed,
+			ttsPlaybackSpeed,
+			ttsVoice,
 			diffEnabled,
 			enableCheckpoints,
 			checkpointTimeout,
@@ -2419,6 +2425,8 @@ export class ClineProvider
 			soundEnabled: soundEnabled ?? false,
 			ttsEnabled: ttsEnabled ?? false,
 			ttsSpeed: ttsSpeed ?? 1.0,
+			ttsPlaybackSpeed: ttsPlaybackSpeed ?? 1.0,
+			ttsVoice: ttsVoice ?? "Daniel",
 			diffEnabled: diffEnabled ?? true,
 			enableCheckpoints: enableCheckpoints ?? true,
 			checkpointTimeout: checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,

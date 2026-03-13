@@ -21,6 +21,10 @@ let speed = 1.0
 
 export const setTtsSpeed = (newSpeed: number) => (speed = newSpeed)
 
+let voice = "female"
+
+export const setTtsVoice = (newVoice: string) => (voice = newVoice)
+
 let sayInstance: Say | undefined = undefined
 let queue: QueueItem[] = []
 
@@ -60,7 +64,7 @@ const processQueue = async (): Promise<void> => {
 			sayInstance = say
 			options.onStart?.()
 
-			say.speak(nextUtterance, undefined, speed, (err) => {
+			say.speak(nextUtterance, voice, speed, (err) => {
 				options.onStop?.()
 
 				if (err) {
