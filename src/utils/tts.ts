@@ -37,19 +37,19 @@ let voice = "male" // Default to male voice
 
 // Map UI voice names to actual Windows SAPI voice names
 const getWindowsVoiceName = (voiceName: string): string => {
-	// US English voices
+	// Available voices on this system: Microsoft Hazel Desktop (male), Microsoft Zira Desktop (female)
 	if (voiceName === "male") {
-		return "Microsoft David Desktop"
+		return "Microsoft Hazel Desktop"
 	} else if (voiceName === "female") {
 		return "Microsoft Zira Desktop"
 	}
 	// Chinese voices - try them but might not work without Chinese voices installed
 	if (voiceName === "male_cn" || voiceName === "female_cn") {
-		// Try Chinese voices, fallback to US voices
-		return voiceName === "male_cn" ? "Microsoft Huihui Desktop" : "Microsoft Yaoyao Desktop"
+		// Try Chinese voices, fallback to English voices
+		return voiceName === "male_cn" ? "Microsoft Hazel Desktop" : "Microsoft Zira Desktop"
 	}
 	// Default to male voice
-	return "Microsoft David Desktop"
+	return "Microsoft Hazel Desktop"
 }
 
 export const setTtsVoice = (newVoice: string) => {
