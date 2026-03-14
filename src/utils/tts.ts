@@ -35,10 +35,10 @@ let voice = "male" // Default to male voice
 // Map UI voice names to actual Windows SAPI voice names
 const getWindowsVoiceName = (voiceName: string): string => {
 	// Available voices on this system:
-	// - Microsoft Hazel Desktop (UK English, male)
-	// - Microsoft Zira Desktop (female)
+	// - Microsoft David Desktop (US English, male)
+	// - Microsoft Zira Desktop (US English, female)
 	if (voiceName === "male") {
-		return "Microsoft Hazel Desktop"
+		return "Microsoft David Desktop"
 	} else if (voiceName === "female") {
 		return "Microsoft Zira Desktop"
 	}
