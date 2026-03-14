@@ -1,10 +1,12 @@
-import { memo, useState, useCallback, useRef } from "react"
+import { memo, useState, useCallback, useRef, useEffect } from "react"
+import { useEvent } from "react-use"
 import { Volume2, VolumeX } from "lucide-react"
 import { Button } from "@src/components/ui"
 import { StandardTooltip } from "@src/components/ui"
 import { Popover, PopoverContent } from "@src/components/ui"
 import { vscode } from "@src/utils/vscode"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
+import type { ExtensionMessage } from "@roo/ExtensionMessage"
 
 interface TtsToggleProps {
 	className?: string
@@ -14,7 +16,19 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 	const { ttsEnabled, ttsPlaybackSpeed, ttsVoice, setTtsEnabled, setTtsPlaybackSpeed, setTtsVoice } =
 		useExtensionState()
 	const [showSettings, setShowSettings] = useState(false)
+	const [isTtsPlaying, setIsTtsPlaying] = useState(false)
 	const isToggling = useRef(false)
+
+	// Listen for TTS start/stop messages from the extension
+	useEvent("message", (event: MessageEvent) => {
+		const message: ExtensionMessage = event.data
+
+		if (message.type === "ttsStart") {
+			setIsTtsPlaying(true)
+		} else if (message.type === "ttsStop") {
+			setIsTtsPlaying(false)
+		}
+	})
 
 	// MiniMax TTS voices - you can expand this list
 	const voices = [
@@ -55,18 +69,38 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 		[setTtsVoice],
 	)
 
+	// Handle stop TTS button click
+	const handleStopTts = useCallback(() => {
+		vscode.postMessage({ type: "stopTts" })
+	}, [])
+
 	return (
 		<Popover open={showSettings} onOpenChange={setShowSettings}>
-			<StandardTooltip content={ttsEnabled ? "TTS Enabled - Click to disable" : "TTS Disabled - Click to enable"}>
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={toggleTts}
-					className={className}
-					aria-label={ttsEnabled ? "Disable TTS" : "Enable TTS"}>
-					{ttsEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-				</Button>
-			</StandardTooltip>
+			{isTtsPlaying ? (
+				// Stop button - appears when TTS is playing
+				<StandardTooltip content="Stop TTS">
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={handleStopTts}
+						className={className}
+						aria-label="Stop TTS">
+						<VolumeX className="size-4 text-red-400" />
+					</Button>
+				</StandardTooltip>
+			) : (
+				// Toggle button - shows when TTS is not playing
+				<StandardTooltip content={ttsEnabled ? "TTS Enabled - Click to disable" : "TTS Disabled - Click to enable"}>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={toggleTts}
+						className={className}
+						aria-label={ttsEnabled ? "Disable TTS" : "Enable TTS"}>
+						{ttsEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+					</Button>
+				</StandardTooltip>
+			)}
 			<PopoverContent className="w-56 p-3 bg-vscode-editor-background border-vscode-input-border">
 				<div className="flex flex-col gap-3">
 					<div className="text-sm font-medium text-vscode-editor-foreground">TTS Settings</div>
