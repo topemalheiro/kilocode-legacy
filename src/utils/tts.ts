@@ -36,9 +36,19 @@ export const setTtsPlaybackSpeed = (newSpeed: number) => {
 let voice = "male" // Default to male voice
 
 // Map UI voice names to actual Windows SAPI voice names
-// Always use US English male voice regardless of setting
 const getWindowsVoiceName = (voiceName: string): string => {
-	// Hardcoded to US English male voice - ignore settings
+	// US English voices
+	if (voiceName === "male") {
+		return "Microsoft David Desktop"
+	} else if (voiceName === "female") {
+		return "Microsoft Zira Desktop"
+	}
+	// Chinese voices - try them but might not work without Chinese voices installed
+	if (voiceName === "male_cn" || voiceName === "female_cn") {
+		// Try Chinese voices, fallback to US voices
+		return voiceName === "male_cn" ? "Microsoft Huihui Desktop" : "Microsoft Yaoyao Desktop"
+	}
+	// Default to male voice
 	return "Microsoft David Desktop"
 }
 
