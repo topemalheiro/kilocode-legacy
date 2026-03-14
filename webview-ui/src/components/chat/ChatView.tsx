@@ -1530,18 +1530,28 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	)
 
 	// Function to handle mode switching
+	// Note: "review" mode is excluded from cycling - it can only be activated via dropdown click
 	const switchToNextMode = useCallback(() => {
-		const allModes = getAllModes(customModes)
-		const currentModeIndex = allModes.findIndex((m) => m.slug === mode)
+		const allModes = getAllModes(customModes).filter(m => m.slug !== "review")
+		// If current mode is review, start from first mode
+		let currentModeIndex = allModes.findIndex((m) => m.slug === mode)
+		if (mode === "review" || currentModeIndex === -1) {
+			currentModeIndex = -1
+		}
 		const nextModeIndex = (currentModeIndex + 1) % allModes.length
 		// Update local state and notify extension to sync mode change
 		switchToMode(allModes[nextModeIndex].slug)
 	}, [mode, customModes, switchToMode])
 
 	// Function to handle switching to previous mode
+	// Note: "review" mode is excluded from cycling - it can only be activated via dropdown click
 	const switchToPreviousMode = useCallback(() => {
-		const allModes = getAllModes(customModes)
-		const currentModeIndex = allModes.findIndex((m) => m.slug === mode)
+		const allModes = getAllModes(customModes).filter(m => m.slug !== "review")
+		// If current mode is review, start from last mode
+		let currentModeIndex = allModes.findIndex((m) => m.slug === mode)
+		if (mode === "review" || currentModeIndex === -1) {
+			currentModeIndex = 0
+		}
 		const previousModeIndex = (currentModeIndex - 1 + allModes.length) % allModes.length
 		// Update local state and notify extension to sync mode change
 		switchToMode(allModes[previousModeIndex].slug)
