@@ -36,20 +36,31 @@ export const setTtsPlaybackSpeed = (newSpeed: number) => {
 let voice = "male" // Default to male voice
 
 // Map UI voice names to actual Windows SAPI voice names
+// Note: Mark/George are OneCore voices (not available in SAPI), David is available in SAPI
 const getWindowsVoiceName = (voiceName: string): string => {
-	// Available voices on this system: Microsoft Hazel Desktop (male), Microsoft Zira Desktop (female)
+	// Microsoft David Desktop is the male voice in SAPI
+	// Microsoft Zira Desktop is the female voice in SAPI
 	if (voiceName === "male") {
-		return "Microsoft Hazel Desktop"
+		return "Microsoft David Desktop"
 	} else if (voiceName === "female") {
 		return "Microsoft Zira Desktop"
 	}
-	// Chinese voices - try them but might not work without Chinese voices installed
+	// Chinese voices
 	if (voiceName === "male_cn" || voiceName === "female_cn") {
-		// Try Chinese voices, fallback to English voices
-		return voiceName === "male_cn" ? "Microsoft Hazel Desktop" : "Microsoft Zira Desktop"
+		return voiceName === "male_cn" ? "Microsoft David Desktop" : "Microsoft Zira Desktop"
 	}
-	// Default to male voice
-	return "Microsoft Hazel Desktop"
+	// Default to male voice (David - the only male in SAPI)
+	return "Microsoft David Desktop"
+}
+
+// Escape special characters for PowerShell to prevent parsing errors
+const escapeForPowerShell = (text: string): string => {
+	// Replace problematic characters that break PowerShell's Speak command
+	return text
+		.replace(/'/g, "") // Remove single quotes
+		.replace(/"/g, '"') // Escape double quotes
+		.replace(/`/g, "``") // Escape backticks
+		.replace(/\$/g, "`$") // Escape dollar signs
 }
 
 export const setTtsVoice = (newVoice: string) => {
@@ -102,10 +113,12 @@ const playTtsInternal = async (message: string): Promise<void> => {
 
 		// Convert "male"/"female" to actual Windows voice names
 		const windowsVoice = getWindowsVoiceName(voice)
+		// Escape the message text for PowerShell
+		const escapedMessage = escapeForPowerShell(message)
 		console.log("[TTS] Starting playback, voice:", voice, "-> windowsVoice:", windowsVoice, "speed:", speed)
 
 		try {
-			say.speak(message, windowsVoice, speed, (err) => {
+			say.speak(escapedMessage, windowsVoice, speed, (err) => {
 				console.log("[TTS] Speak finished, err:", err)
 
 				currentSayInstance = undefined
