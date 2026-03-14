@@ -98,7 +98,7 @@ export const NotificationSettings = ({
 								<Slider
 									min={50}
 									max={350}
-									step={25}
+									step={1}
 									value={[Math.round((ttsPlaybackSpeed ?? 1.5) * 100)]}
 									onValueChange={([value]) => setCachedStateField("ttsPlaybackSpeed", value / 100)}
 									data-testid="tts-speed-slider"

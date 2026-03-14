@@ -80,7 +80,7 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 							type="range"
 							min={50}
 							max={350}
-							step={25}
+							step={1}
 							value={Math.round((ttsPlaybackSpeed ?? 1.5) * 100)}
 							onChange={(e) => handleSpeedChange(parseInt(e.target.value))}
 							className="w-full h-2 bg-vscode-progressBackground rounded-full appearance-none cursor-pointer accent-vscode-button-background"
