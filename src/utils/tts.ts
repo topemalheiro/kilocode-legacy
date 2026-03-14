@@ -15,35 +15,31 @@ export const setTtsEnabled = (enabled: boolean) => {
 	isTtsEnabled = enabled
 }
 
-let speed = 1.0
+// Speed variable - used by TTS
+let speed = 1.5 // Default to 1.5x for faster speech
 
 export const setTtsSpeed = (newSpeed: number) => {
 	console.log("[TTS] setTtsSpeed called, speed:", newSpeed)
 	speed = newSpeed
 }
 
-// Separate playback speed for TTS (used by UI)
+// Separate playback speed for TTS (used by UI) - sync with actual speed
 let playbackSpeed = 1.5
 
 export const setTtsPlaybackSpeed = (newSpeed: number) => {
 	console.log("[TTS] setTtsPlaybackSpeed called, speed:", newSpeed)
 	playbackSpeed = newSpeed
+	// Also update the actual TTS speed
+	speed = newSpeed
 }
 
 let voice = "male" // Default to male voice
 
 // Map UI voice names to actual Windows SAPI voice names
+// Always use US English male voice regardless of setting
 const getWindowsVoiceName = (voiceName: string): string => {
-	// Available voices on this system:
-	// - Microsoft David Desktop (US English, male)
-	// - Microsoft Zira Desktop (US English, female)
-	if (voiceName === "male") {
-		return "Microsoft David Desktop"
-	} else if (voiceName === "female") {
-		return "Microsoft Zira Desktop"
-	}
-	// Return as-is if already a proper voice name
-	return voiceName
+	// Hardcoded to US English male voice - ignore settings
+	return "Microsoft David Desktop"
 }
 
 export const setTtsVoice = (newVoice: string) => {
