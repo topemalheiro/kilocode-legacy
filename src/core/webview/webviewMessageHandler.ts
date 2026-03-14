@@ -642,6 +642,12 @@ export const webviewMessageHandler = async (
 		case "updateSettings":
 			if (message.updatedSettings) {
 				console.log("[updateSettings] Received:", JSON.stringify(message.updatedSettings))
+				// Track if we should skip postStateToWebview for TTS-only updates
+				// This prevents the toggle from flickering back to the old state
+				const ttsKeys = ["ttsEnabled", "ttsSpeed", "ttsPlaybackSpeed", "ttsVoice"]
+				const allKeys = Object.keys(message.updatedSettings)
+				const onlyTtsKeys = allKeys.every((key) => ttsKeys.includes(key))
+
 				for (const [key, value] of Object.entries(message.updatedSettings)) {
 					let newValue = value
 
@@ -672,8 +678,10 @@ export const webviewMessageHandler = async (
 							.update("deniedCommands", newValue, vscode.ConfigurationTarget.Global)
 					} else if (key === "ttsEnabled") {
 						newValue = value ?? true
+						await updateGlobalState("ttsEnabled", newValue as boolean)
 						setTtsEnabled(newValue as boolean)
-						// Skip generic setValue - no need to save to globalState
+						// Skip generic setValue and postStateToWebview - UI already updated optimistically
+						// This prevents the toggle from flickering back to the old state
 						continue
 					} else if (key === "ttsSpeed") {
 						newValue = value ?? 1.0
@@ -756,7 +764,12 @@ export const webviewMessageHandler = async (
 					await provider.contextProxy.setValue(key as keyof RooCodeSettings, newValue)
 				}
 
-				await provider.postStateToWebview()
+				// Skip postStateToWebview if only TTS settings were updated
+				// This prevents the toggle from flickering back to the old state
+				// The UI already updated optimistically
+				if (!onlyTtsKeys) {
+					await provider.postStateToWebview()
+				}
 			}
 
 			break
@@ -1850,20 +1863,21 @@ export const webviewMessageHandler = async (
 			const ttsEnabled = message.bool ?? true
 			await updateGlobalState("ttsEnabled", ttsEnabled)
 			setTtsEnabled(ttsEnabled)
-			await provider.postStateToWebview()
+			// Skip postStateToWebview - UI already updated optimistically
+			// This prevents the toggle from flickering back to the old state
 			break
 		case "ttsSpeed":
 			const ttsSpeed = message.value ?? 1.0
 			await updateGlobalState("ttsSpeed", ttsSpeed)
 			setTtsSpeed(ttsSpeed)
-			await provider.postStateToWebview()
+			// Skip postStateToWebview - settings don't need UI sync for this
 			break
 		case "ttsPlaybackSpeed":
 			const ttsPlaybackSpeed = typeof message.value === "number" ? message.value : 1.5
 			console.log("[ttsPlaybackSpeed message] Saving:", ttsPlaybackSpeed)
 			await updateGlobalState("ttsPlaybackSpeed", ttsPlaybackSpeed)
 			setTtsPlaybackSpeed(ttsPlaybackSpeed)
-			await provider.postStateToWebview()
+			// Skip postStateToWebview - settings don't need UI sync for this
 			break
 		case "ttsVoice":
 			// kilocode_change: SettingsView sends message.text, not message.value
@@ -1871,7 +1885,7 @@ export const webviewMessageHandler = async (
 			console.log("[ttsVoice message] Saving:", ttsVoice)
 			await updateGlobalState("ttsVoice", ttsVoice)
 			setTtsVoice(ttsVoice)
-			await provider.postStateToWebview()
+			// Skip postStateToWebview - settings don't need UI sync for this
 			break
 		case "playTts":
 			if (message.text) {

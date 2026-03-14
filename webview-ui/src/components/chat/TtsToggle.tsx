@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from "react"
+import { memo, useState, useCallback, useRef } from "react"
 import { Volume2, VolumeX } from "lucide-react"
 import { Button } from "@src/components/ui"
 import { StandardTooltip } from "@src/components/ui"
@@ -14,6 +14,7 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 	const { ttsEnabled, ttsPlaybackSpeed, ttsVoice, setTtsEnabled, setTtsPlaybackSpeed, setTtsVoice } =
 		useExtensionState()
 	const [showSettings, setShowSettings] = useState(false)
+	const isToggling = useRef(false)
 
 	// MiniMax TTS voices - you can expand this list
 	const voices = [
@@ -24,6 +25,13 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 	]
 
 	const toggleTts = useCallback(() => {
+		// Prevent double-toggle within 300ms
+		if (isToggling.current) return
+		isToggling.current = true
+		setTimeout(() => {
+			isToggling.current = false
+		}, 300)
+
 		const newValue = !ttsEnabled
 		setTtsEnabled(newValue)
 		vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsEnabled: newValue } })
