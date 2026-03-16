@@ -202,6 +202,7 @@ export const SYSTEM_PROMPT = async (
 	modelId?: string,
 	skillsManager?: SkillsManager,
 	clineProviderState?: ClineProviderState, // kilocode_change
+	taskName?: string,
 ): Promise<string> => {
 	if (!context) {
 		throw new Error("Extension context is required for generating system prompt")
@@ -217,6 +218,7 @@ export const SYSTEM_PROMPT = async (
 		language: language ?? formatLanguage(vscode.env.language),
 		shell: vscode.env.shell,
 		operatingSystem: os.type(),
+		taskName: taskName,
 	}
 	const fileCustomSystemPrompt = await loadSystemPromptFile(cwd, mode, variablesForPrompt)
 

@@ -9,6 +9,7 @@ export type PromptVariables = {
 	language?: string
 	shell?: string
 	operatingSystem?: string
+	taskName?: string
 }
 
 function interpolatePromptContent(content: string, variables: PromptVariables): string {

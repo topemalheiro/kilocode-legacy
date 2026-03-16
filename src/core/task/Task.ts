@@ -2365,11 +2365,28 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		})()
 
 		if (responseText) {
-			// kilocode_change start
+			// kilocode_change start: Get task name for <task> XML tag interpolation
+			// This ensures that if the task was renamed, the new name is used in the prompt
+			let taskName = this.metadata.task
+			try {
+				const provider = this.providerRef.deref()
+				if (provider) {
+					const taskHistory = provider.getTaskHistory()
+					const currentTaskHistoryItem = taskHistory.find((item) => item.id === this.taskId)
+					if (currentTaskHistoryItem?.customName) {
+						taskName = currentTaskHistoryItem.customName
+					}
+				}
+			} catch (error) {
+				// If we fail to get the task name, fall back to the original task description
+				console.warn("[Task#resumeTaskFromHistory] Failed to get customName from history, using original task:", error)
+			}
+
+			// Include the <task> XML tag with task name, similar to startTask()
 			newUserContent = addOrMergeUserContent(newUserContent, [
 				{
 					type: "text",
-					text: `\n\nNew instructions for task continuation:\n<user_message>\n${responseText}\n</user_message>`,
+					text: `<task>\n${taskName}\n</task>\n\nNew instructions for task continuation:\n<user_message>\n${responseText}\n</user_message>`,
 				},
 			])
 			// kilocode_change end
@@ -2380,12 +2397,30 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		// Ensure we have at least some content to send to the API.
-		// If newUserContent is empty, add a minimal resumption message.
+		// If newUserContent is empty, add a minimal resumption message with <task> XML tag
 		if (newUserContent.length === 0) {
+			// kilocode_change start: Get task name for <task> XML tag interpolation
+			// This ensures that if the task was renamed, the new name is used in the prompt
+			let taskName = this.metadata.task
+			try {
+				const provider = this.providerRef.deref()
+				if (provider) {
+					const taskHistory = provider.getTaskHistory()
+					const currentTaskHistoryItem = taskHistory.find((item) => item.id === this.taskId)
+					if (currentTaskHistoryItem?.customName) {
+						taskName = currentTaskHistoryItem.customName
+					}
+				}
+			} catch (error) {
+				// If we fail to get the task name, fall back to the original task description
+				console.warn("[Task#resumeTaskFromHistory] Failed to get customName from history, using original task:", error)
+			}
+
 			newUserContent.push({
 				type: "text",
-				text: "[TASK RESUMPTION] Resuming task...",
+				text: `<task>\n${taskName}\n</task>\n\n[TASK RESUMPTION] Resuming task...`,
 			})
+			// kilocode_change end
 		}
 
 		await this.overwriteApiConversationHistory(modifiedApiConversationHistory)
