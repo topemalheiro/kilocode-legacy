@@ -2060,12 +2060,29 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		let imageBlocks: Anthropic.ImageBlockParam[] = formatResponse.imageBlocks(images)
 
+		// Get the task's customName from task history for <task> XML interpolation
+		// This ensures that if the task was renamed, the new name is used in the prompt
+		let taskName = task
+		try {
+			const provider = this.providerRef.deref()
+			if (provider) {
+				const taskHistory = provider.getTaskHistory()
+				const currentTaskHistoryItem = taskHistory.find((item) => item.id === this.taskId)
+				if (currentTaskHistoryItem?.customName) {
+					taskName = currentTaskHistoryItem.customName
+				}
+			}
+		} catch (error) {
+			// If we fail to get the task name, fall back to the original task description
+			console.warn("[Task#startTask] Failed to get customName from history, using original task:", error)
+		}
+
 		// Task starting
 
 		await this.initiateTaskLoop([
 			{
 				type: "text",
-				text: `<task>\n${task}\n</task>`,
+				text: `<task>\n${taskName}\n</task>`,
 			},
 			...imageBlocks,
 		]).catch((error) => {
@@ -4179,6 +4196,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				throw new Error("Provider not available")
 			}
 
+			// Get the task's customName from task history for system prompt interpolation
+			const taskHistory = provider.getTaskHistory()
+			const currentTaskHistoryItem = taskHistory.find((item) => item.id === this.taskId)
+			const taskName = currentTaskHistoryItem?.customName
+
 			// Align browser tool enablement with generateSystemPrompt: require model image support,
 			// mode to include the browser group, and the user setting to be enabled.
 			const modeConfig = getModeBySlug(mode ?? defaultModeSlug, customModes)
@@ -4232,6 +4254,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				this.api.getModel().id,
 				provider.getSkillsManager(),
 				state, // kilocode_change
+				taskName, // kilocode_change: pass task name for system prompt interpolation
 			)
 		})()
 	}
