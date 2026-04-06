@@ -151,6 +151,12 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 	)
 
 	const [editingApiConfigName, setEditingApiConfigName] = useState<string>(currentApiConfigName || "default") // kilocode_change: Track which profile is being edited separately from the active profile
+	const [editingApiConfigId, setEditingApiConfigId] = useState<string | undefined>(() =>
+		listApiConfigMeta?.find((config) => config.name === currentApiConfigName)?.id,
+	)
+	const [editingOpenAiCodexIsAuthenticated, setEditingOpenAiCodexIsAuthenticated] = useState<boolean>(
+		Boolean(extensionState.openAiCodexIsAuthenticated),
+	)
 	const [isSaving, setIsSaving] = useState(false) // kilocode_change: Flag to prevent state sync during save
 
 	const scrollPositions = useRef<Record<SectionName, number>>(
@@ -286,22 +292,25 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 		// kilocode_change start - Don't reset editingApiConfigName if we have an editingProfile prop (from auth return)
 		if (!editingProfile) {
 			setEditingApiConfigName(currentApiConfigName || "default")
+			setEditingApiConfigId(listApiConfigMeta?.find((config) => config.name === currentApiConfigName)?.id)
+			setEditingOpenAiCodexIsAuthenticated(Boolean(extensionState.openAiCodexIsAuthenticated))
 		}
 		// kilocode_change end
-	}, [currentApiConfigName, extensionState, editingProfile]) // kilocode_change
+	}, [currentApiConfigName, extensionState, editingProfile, listApiConfigMeta]) // kilocode_change
 
 	// kilocode_change start: Set editing profile when prop changes (from auth return)
 	useEffect(() => {
 		if (editingProfile) {
 			console.log("[SettingsView] Setting editing profile from prop:", editingProfile)
 			setEditingApiConfigName(editingProfile)
+			setEditingApiConfigId(listApiConfigMeta?.find((config) => config.name === editingProfile)?.id)
 			isLoadingProfileForEditing.current = true
 			vscode.postMessage({
 				type: "getProfileConfigurationForEditing",
 				text: editingProfile,
 			})
 		}
-	}, [editingProfile])
+	}, [editingProfile, listApiConfigMeta])
 	// kilocode_change end
 
 	// kilocode_change start
@@ -316,6 +325,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 					...prevState,
 					apiConfiguration: message.apiConfiguration,
 				}))
+				setEditingApiConfigId(message.profileId)
+				setEditingOpenAiCodexIsAuthenticated(Boolean(message.openAiCodexIsAuthenticated))
 				setChangeDetected(false)
 				isLoadingProfileForEditing.current = false
 			}
@@ -342,6 +353,18 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 			},
 		}))
 	}, [kilocodeToken, openRouterApiKey, glamaApiKey, requestyApiKey])
+
+	useEffect(() => {
+		if (editingApiConfigName === currentApiConfigName) {
+			setEditingApiConfigId(listApiConfigMeta?.find((config) => config.name === currentApiConfigName)?.id)
+			setEditingOpenAiCodexIsAuthenticated(Boolean(extensionState.openAiCodexIsAuthenticated))
+		}
+	}, [
+		currentApiConfigName,
+		editingApiConfigName,
+		extensionState.openAiCodexIsAuthenticated,
+		listApiConfigMeta,
+	])
 
 	useEffect(() => {
 		// Only update if we're not already detecting changes
@@ -1048,6 +1071,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 										onSelectConfig={(configName: string) => {
 											checkUnsaveChanges(() => {
 												setEditingApiConfigName(configName)
+												setEditingApiConfigId(
+													listApiConfigMeta?.find((profile) => profile.name === configName)?.id,
+												)
 												// Set flag to prevent extensionState sync while loading
 												isLoadingProfileForEditing.current = true
 												// Request the profile's configuration for editing
@@ -1070,6 +1096,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 												const nextProfile = listApiConfigMeta.find((p) => p.name !== configName)
 												if (nextProfile) {
 													setEditingApiConfigName(nextProfile.name)
+													setEditingApiConfigId(nextProfile.id)
 												}
 											}
 										}}
@@ -1110,6 +1137,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 										errorMessage={errorMessage}
 										setErrorMessage={setErrorMessage}
 										currentApiConfigName={editingApiConfigName}
+										currentApiConfigId={editingApiConfigId}
+										openAiCodexIsAuthenticatedOverride={editingOpenAiCodexIsAuthenticated}
 									/>
 									{/* kilocode_change end - pass editing profile name */}
 								</Section>

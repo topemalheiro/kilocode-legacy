@@ -11,6 +11,33 @@ import { copyPaths, copyWasms, copyLocales, setupLocaleWatcher } from "@roo-code
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+function removeDirectoryRobustSync(dirPath) {
+	if (!fs.existsSync(dirPath)) {
+		return
+	}
+
+	try {
+		fs.rmSync(dirPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+		return
+	} catch (error) {
+		if (!(error instanceof Error) || !("code" in error)) {
+			throw error
+		}
+
+		const code = error.code
+		if (!["ENOTEMPTY", "EBUSY", "EPERM"].includes(code)) {
+			throw error
+		}
+	}
+
+	for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+		const entryPath = path.join(dirPath, entry.name)
+		fs.rmSync(entryPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+	}
+
+	fs.rmdirSync(dirPath)
+}
+
 async function main() {
 	const name = "extension"
 	const production = process.argv.includes("--production")
@@ -42,7 +69,7 @@ async function main() {
 
 	if (fs.existsSync(distDir)) {
 		console.log(`[${name}] Cleaning dist directory: ${distDir}`)
-		fs.rmSync(distDir, { recursive: true, force: true })
+		removeDirectoryRobustSync(distDir)
 	}
 
 	/**

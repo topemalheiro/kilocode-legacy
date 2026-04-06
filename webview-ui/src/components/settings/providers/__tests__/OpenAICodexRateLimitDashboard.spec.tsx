@@ -50,6 +50,24 @@ describe("OpenAICodexRateLimitDashboard", () => {
 		expect(postMessageMock).toHaveBeenCalledWith({ type: "requestOpenAiCodexRateLimits" })
 	})
 
+	it("sends a profile-scoped request when profile context is provided", () => {
+		render(
+			<OpenAICodexRateLimitDashboard
+				isAuthenticated={true}
+				profileId="profile-456"
+				profileName="Codex Secondary"
+			/>,
+		)
+
+		expect(postMessageMock).toHaveBeenCalledWith({
+			type: "requestOpenAiCodexRateLimits",
+			values: {
+				profileId: "profile-456",
+				profileName: "Codex Secondary",
+			},
+		})
+	})
+
 	it("renders usage values from payload", () => {
 		render(<OpenAICodexRateLimitDashboard isAuthenticated={true} />)
 

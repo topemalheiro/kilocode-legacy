@@ -336,6 +336,8 @@ export interface ExtensionMessage {
 	commits?: GitCommit[]
 	listApiConfig?: ProviderSettingsEntry[]
 	apiConfiguration?: ProviderSettings // kilocode_change: For profileConfigurationForEditing response
+	profileId?: string // kilocode_change: For profileConfigurationForEditing response
+	openAiCodexIsAuthenticated?: boolean // kilocode_change: For profileConfigurationForEditing response
 	sessionId?: string // kilocode_change: STT session ID
 	segments?: STTSegment[] // kilocode_change: STT transcript segments (complete state)
 	isFinal?: boolean // kilocode_change: STT transcript is final
@@ -1192,6 +1194,10 @@ export interface TaskHistoryResponsePayload {
 
 export interface RequestOpenAiCodexRateLimitsMessage {
 	type: "requestOpenAiCodexRateLimits"
+	values?: {
+		profileId?: string
+		profileName?: string
+	}
 }
 
 export const checkoutDiffPayloadSchema = z.object({

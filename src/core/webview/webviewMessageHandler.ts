@@ -127,6 +127,54 @@ export const webviewMessageHandler = async (
 		return provider.getCurrentTask()?.cwd || provider.cwd
 	}
 
+	const getRequestedProfileTarget = () => {
+		const providerProfiles = provider.getProviderProfileEntries?.() ?? []
+		const messageValues = "values" in message ? message.values : undefined
+		const requestedProfileId =
+			typeof messageValues?.profileId === "string" ? (messageValues.profileId as string) : undefined
+		const requestedProfileName =
+			typeof messageValues?.profileName === "string" ? (messageValues.profileName as string) : undefined
+
+		const profileId = requestedProfileId ?? provider.getProviderProfileEntry(requestedProfileName ?? "")?.id
+		const profileName =
+			requestedProfileName ?? providerProfiles.find((profile) => profile.id === requestedProfileId)?.name
+
+		return { profileId, profileName }
+	}
+
+	const getOpenAiCodexProfileId = () => getRequestedProfileTarget().profileId ?? provider.getActiveProviderProfileId()
+
+	const postProfileConfigurationForEditing = async (profileName?: string) => {
+		if (!profileName) {
+			return
+		}
+
+		try {
+			const { name: _, ...profileConfig } = await provider.providerSettingsManager.getProfile({
+				name: profileName,
+			})
+			const profileId = typeof profileConfig.id === "string" ? profileConfig.id : undefined
+
+			let openAiCodexIsAuthenticated = false
+			try {
+				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
+				openAiCodexIsAuthenticated = await openAiCodexOAuthManager.isAuthenticated(profileId)
+			} catch {
+				openAiCodexIsAuthenticated = false
+			}
+
+			await provider.postMessageToWebview({
+				type: "profileConfigurationForEditing",
+				text: profileName,
+				apiConfiguration: profileConfig,
+				profileId,
+				openAiCodexIsAuthenticated,
+			})
+		} catch (error) {
+			provider.log(`Failed to post profile configuration for editing: ${error}`)
+		}
+	}
+
 	/**
 	 * Resolves image file mentions in incoming messages.
 	 * Matches read_file behavior: respects size limits and model capabilities.
@@ -2550,15 +2598,7 @@ export const webviewMessageHandler = async (
 		// kilocode_change start: Load profile configuration for editing without activating
 		case "getProfileConfigurationForEditing":
 			if (message.text) {
-				const { name: _, ...profileConfig } = await provider.providerSettingsManager.getProfile({
-					name: message.text,
-				})
-				// Send the configuration back to the webview without activating it
-				await provider.postMessageToWebview({
-					type: "profileConfigurationForEditing",
-					text: message.text,
-					apiConfiguration: profileConfig,
-				})
+				await postProfileConfigurationForEditing(message.text)
 			}
 			break
 		// kilocode_change end
@@ -3370,7 +3410,9 @@ export const webviewMessageHandler = async (
 		case "openAiCodexSignIn": {
 			try {
 				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
-				const authUrl = openAiCodexOAuthManager.startAuthorizationFlow()
+				const { profileName } = getRequestedProfileTarget()
+				const profileId = getOpenAiCodexProfileId()
+				const authUrl = openAiCodexOAuthManager.startAuthorizationFlow(profileId)
 
 				// Open the authorization URL in the browser
 				await vscode.env.openExternal(vscode.Uri.parse(authUrl))
@@ -3381,6 +3423,7 @@ export const webviewMessageHandler = async (
 					.then(async () => {
 						vscode.window.showInformationMessage("Successfully signed in to OpenAI Codex")
 						await provider.postStateToWebview()
+						await postProfileConfigurationForEditing(profileName)
 					})
 					.catch((error) => {
 						provider.log(`OpenAI Codex OAuth callback failed: ${error}`)
@@ -3397,9 +3440,12 @@ export const webviewMessageHandler = async (
 		case "openAiCodexSignOut": {
 			try {
 				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
-				await openAiCodexOAuthManager.clearCredentials()
+				const { profileName } = getRequestedProfileTarget()
+				const profileId = getOpenAiCodexProfileId()
+				await openAiCodexOAuthManager.clearCredentials(profileId)
 				vscode.window.showInformationMessage("Signed out from OpenAI Codex")
 				await provider.postStateToWebview()
+				await postProfileConfigurationForEditing(profileName)
 			} catch (error) {
 				provider.log(`OpenAI Codex sign out failed: ${error}`)
 				vscode.window.showErrorMessage("OpenAI Codex sign out failed.")
@@ -4702,7 +4748,8 @@ export const webviewMessageHandler = async (
 		case "requestOpenAiCodexRateLimits": {
 			try {
 				const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
-				const accessToken = await openAiCodexOAuthManager.getAccessToken()
+				const profileId = getOpenAiCodexProfileId()
+				const accessToken = await openAiCodexOAuthManager.getAccessToken(profileId)
 
 				if (!accessToken) {
 					provider.postMessageToWebview({
@@ -4712,7 +4759,7 @@ export const webviewMessageHandler = async (
 					break
 				}
 
-				const accountId = await openAiCodexOAuthManager.getAccountId()
+				const accountId = await openAiCodexOAuthManager.getAccountId(profileId)
 				const { fetchOpenAiCodexRateLimitInfo } = await import("../../integrations/openai-codex/rate-limits")
 				const rateLimits = await fetchOpenAiCodexRateLimitInfo(accessToken, { accountId })
 

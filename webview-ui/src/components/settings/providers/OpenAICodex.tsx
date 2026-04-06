@@ -14,6 +14,8 @@ interface OpenAICodexProps {
 	setApiConfigurationField: (field: keyof ProviderSettings, value: ProviderSettings[keyof ProviderSettings]) => void
 	simplifySettings?: boolean
 	openAiCodexIsAuthenticated?: boolean
+	profileName?: string
+	profileId?: string
 }
 
 export const OpenAICodex: React.FC<OpenAICodexProps> = ({
@@ -21,8 +23,11 @@ export const OpenAICodex: React.FC<OpenAICodexProps> = ({
 	setApiConfigurationField,
 	simplifySettings,
 	openAiCodexIsAuthenticated = false,
+	profileName,
+	profileId,
 }) => {
 	const { t } = useAppTranslation()
+	const profileValues = profileId || profileName ? { profileId, profileName } : undefined
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -33,7 +38,12 @@ export const OpenAICodex: React.FC<OpenAICodexProps> = ({
 						<Button
 							variant="secondary"
 							size="sm"
-							onClick={() => vscode.postMessage({ type: "openAiCodexSignOut" })}>
+							onClick={() =>
+								vscode.postMessage({
+									type: "openAiCodexSignOut",
+									...(profileValues ? { values: profileValues } : {}),
+								})
+							}>
 							{t("settings:providers.openAiCodex.signOutButton", {
 								defaultValue: "Sign Out",
 							})}
@@ -42,7 +52,12 @@ export const OpenAICodex: React.FC<OpenAICodexProps> = ({
 				) : (
 					<Button
 						variant="primary"
-						onClick={() => vscode.postMessage({ type: "openAiCodexSignIn" })}
+						onClick={() =>
+							vscode.postMessage({
+								type: "openAiCodexSignIn",
+								...(profileValues ? { values: profileValues } : {}),
+							})
+						}
 						className="w-fit">
 						{t("settings:providers.openAiCodex.signInButton", {
 							defaultValue: "Sign in to OpenAI Codex",
@@ -52,7 +67,11 @@ export const OpenAICodex: React.FC<OpenAICodexProps> = ({
 			</div>
 
 			{/* Rate Limit Dashboard - only shown when authenticated */}
-			<OpenAICodexRateLimitDashboard isAuthenticated={openAiCodexIsAuthenticated} />
+			<OpenAICodexRateLimitDashboard
+				isAuthenticated={openAiCodexIsAuthenticated}
+				profileId={profileId}
+				profileName={profileName}
+			/>
 
 			{/* Model Picker */}
 			<ModelPicker

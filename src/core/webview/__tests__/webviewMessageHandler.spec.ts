@@ -9,6 +9,10 @@ vi.mock("../../../integrations/openai-codex/oauth", () => ({
 	openAiCodexOAuthManager: {
 		getAccessToken: vi.fn(),
 		getAccountId: vi.fn(),
+		isAuthenticated: vi.fn(),
+		startAuthorizationFlow: vi.fn(),
+		waitForCallback: vi.fn(),
+		clearCredentials: vi.fn(),
 	},
 }))
 
@@ -32,6 +36,10 @@ const { fetchOpenAiCodexRateLimitInfo } = await import("../../../integrations/op
 const mockGetModels = getModels as Mock<typeof getModels>
 const mockGetAccessToken = vi.mocked(openAiCodexOAuthManager.getAccessToken)
 const mockGetAccountId = vi.mocked(openAiCodexOAuthManager.getAccountId)
+const mockIsAuthenticated = vi.mocked(openAiCodexOAuthManager.isAuthenticated)
+const mockStartAuthorizationFlow = vi.mocked(openAiCodexOAuthManager.startAuthorizationFlow)
+const mockWaitForCallback = vi.mocked(openAiCodexOAuthManager.waitForCallback)
+const mockClearCredentials = vi.mocked(openAiCodexOAuthManager.clearCredentials)
 const mockFetchOpenAiCodexRateLimitInfo = vi.mocked(fetchOpenAiCodexRateLimitInfo)
 
 // Mock ClineProvider
@@ -59,6 +67,12 @@ const mockClineProvider = {
 	getCurrentTask: vi.fn(),
 	getTaskWithId: vi.fn(),
 	createTaskWithHistoryItem: vi.fn(),
+	getActiveProviderProfileId: vi.fn(),
+	getProviderProfileEntry: vi.fn(),
+	getProviderProfileEntries: vi.fn(),
+	providerSettingsManager: {
+		getProfile: vi.fn(),
+	},
 } as unknown as ClineProvider
 
 import { t } from "../../../i18n"
@@ -75,6 +89,12 @@ vi.mock("vscode", () => {
 			showErrorMessage,
 			showTextDocument,
 			createTextEditorDecorationType: vi.fn(() => ({ dispose: vi.fn() })), // kilocode_change
+		},
+		env: {
+			openExternal: vi.fn(),
+		},
+		Uri: {
+			parse: vi.fn((value: string) => ({ toString: () => value })),
 		},
 		workspace: {
 			workspaceFolders: [{ uri: { fsPath: "/mock/workspace" } }],
@@ -806,6 +826,8 @@ describe("webviewMessageHandler - requestRouterModels", () => {
 describe("webviewMessageHandler - requestOpenAiCodexRateLimits", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
+		vi.mocked(mockClineProvider.getActiveProviderProfileId).mockReturnValue("profile-123")
+		vi.mocked(mockClineProvider.getProviderProfileEntry).mockReturnValue(undefined)
 		mockGetAccessToken.mockResolvedValue(null)
 		mockGetAccountId.mockResolvedValue(null)
 	})
@@ -813,6 +835,7 @@ describe("webviewMessageHandler - requestOpenAiCodexRateLimits", () => {
 	it("posts error when not authenticated", async () => {
 		await webviewMessageHandler(mockClineProvider, { type: "requestOpenAiCodexRateLimits" } as any)
 
+		expect(mockGetAccessToken).toHaveBeenCalledWith("profile-123")
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "openAiCodexRateLimits",
 			error: "Not authenticated with OpenAI Codex",
@@ -829,6 +852,8 @@ describe("webviewMessageHandler - requestOpenAiCodexRateLimits", () => {
 
 		await webviewMessageHandler(mockClineProvider, { type: "requestOpenAiCodexRateLimits" } as any)
 
+		expect(mockGetAccessToken).toHaveBeenCalledWith("profile-123")
+		expect(mockGetAccountId).toHaveBeenCalledWith("profile-123")
 		expect(mockFetchOpenAiCodexRateLimitInfo).toHaveBeenCalledWith("token", { accountId: "acct_123" })
 		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
 			type: "openAiCodexRateLimits",
@@ -836,6 +861,135 @@ describe("webviewMessageHandler - requestOpenAiCodexRateLimits", () => {
 				primary: { usedPercent: 10, resetsAt: 1700000000000 },
 				fetchedAt: 1700000000000,
 			},
+		})
+	})
+
+	it("prefers explicit profile id over the active profile", async () => {
+		mockGetAccessToken.mockResolvedValue("token")
+		mockGetAccountId.mockResolvedValue("acct_override")
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "requestOpenAiCodexRateLimits",
+			values: { profileId: "profile-456", profileName: "Codex Secondary" },
+		} as any)
+
+		expect(mockGetAccessToken).toHaveBeenCalledWith("profile-456")
+		expect(mockGetAccountId).toHaveBeenCalledWith("profile-456")
+	})
+})
+
+describe("webviewMessageHandler - openAiCodex auth actions", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+		vi.mocked(mockClineProvider.getActiveProviderProfileId).mockReturnValue("profile-123")
+		vi.mocked(mockClineProvider.getProviderProfileEntries).mockReturnValue([
+			{ id: "profile-123", name: "Codex Primary" } as any,
+			{ id: "profile-456", name: "Codex Secondary" } as any,
+		])
+		;(mockClineProvider.providerSettingsManager.getProfile as Mock).mockResolvedValue({
+			id: "profile-456",
+			name: "Codex Secondary",
+			apiProvider: "openai-codex",
+			apiModelId: "gpt-5.4",
+		})
+		mockIsAuthenticated.mockResolvedValue(true)
+		mockStartAuthorizationFlow.mockReturnValue("https://auth.example")
+		mockWaitForCallback.mockResolvedValue({
+			type: "openai-codex",
+			access_token: "token",
+			refresh_token: "refresh",
+			expires: Date.now() + 60_000,
+		})
+	})
+
+	it("uses active profile id for sign in", async () => {
+		await webviewMessageHandler(mockClineProvider, { type: "openAiCodexSignIn" } as any)
+
+		expect(mockStartAuthorizationFlow).toHaveBeenCalledWith("profile-123")
+		expect(vscode.env.openExternal).toHaveBeenCalled()
+	})
+
+	it("uses explicit profile context for sign in and refreshes the edited profile", async () => {
+		await webviewMessageHandler(mockClineProvider, {
+			type: "openAiCodexSignIn",
+			values: { profileId: "profile-456", profileName: "Codex Secondary" },
+		} as any)
+
+		expect(mockStartAuthorizationFlow).toHaveBeenCalledWith("profile-456")
+		await vi.waitFor(() => {
+			expect(mockClineProvider.postStateToWebview).toHaveBeenCalled()
+			expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
+				type: "profileConfigurationForEditing",
+				text: "Codex Secondary",
+				apiConfiguration: {
+					id: "profile-456",
+					apiProvider: "openai-codex",
+					apiModelId: "gpt-5.4",
+				},
+				profileId: "profile-456",
+				openAiCodexIsAuthenticated: true,
+			})
+		})
+	})
+
+	it("uses active profile id for sign out", async () => {
+		await webviewMessageHandler(mockClineProvider, { type: "openAiCodexSignOut" } as any)
+
+		expect(mockClearCredentials).toHaveBeenCalledWith("profile-123")
+	})
+
+	it("uses explicit profile context for sign out", async () => {
+		mockIsAuthenticated.mockResolvedValue(false)
+
+		await webviewMessageHandler(mockClineProvider, {
+			type: "openAiCodexSignOut",
+			values: { profileId: "profile-456", profileName: "Codex Secondary" },
+		} as any)
+
+		expect(mockClearCredentials).toHaveBeenCalledWith("profile-456")
+		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
+			type: "profileConfigurationForEditing",
+			text: "Codex Secondary",
+			apiConfiguration: {
+				id: "profile-456",
+				apiProvider: "openai-codex",
+				apiModelId: "gpt-5.4",
+			},
+			profileId: "profile-456",
+			openAiCodexIsAuthenticated: false,
+		})
+	})
+})
+
+describe("webviewMessageHandler - getProfileConfigurationForEditing", () => {
+	beforeEach(() => {
+		vi.clearAllMocks()
+		;(mockClineProvider.providerSettingsManager.getProfile as Mock).mockResolvedValue({
+			id: "profile-456",
+			name: "Codex Secondary",
+			apiProvider: "openai-codex",
+			apiModelId: "gpt-5.4",
+		})
+		mockIsAuthenticated.mockResolvedValue(true)
+	})
+
+	it("returns the edited profile auth state", async () => {
+		await webviewMessageHandler(mockClineProvider, {
+			type: "getProfileConfigurationForEditing",
+			text: "Codex Secondary",
+		} as any)
+
+		expect(mockIsAuthenticated).toHaveBeenCalledWith("profile-456")
+		expect(mockClineProvider.postMessageToWebview).toHaveBeenCalledWith({
+			type: "profileConfigurationForEditing",
+			text: "Codex Secondary",
+			apiConfiguration: {
+				id: "profile-456",
+				apiProvider: "openai-codex",
+				apiModelId: "gpt-5.4",
+			},
+			profileId: "profile-456",
+			openAiCodexIsAuthenticated: true,
 		})
 	})
 })

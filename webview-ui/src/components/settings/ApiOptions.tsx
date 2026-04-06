@@ -164,6 +164,8 @@ export interface ApiOptionsProps {
 	setErrorMessage: React.Dispatch<React.SetStateAction<string | undefined>>
 	hideKiloCodeButton?: boolean // kilocode_change
 	currentApiConfigName?: string // kilocode_change
+	currentApiConfigId?: string // kilocode_change
+	openAiCodexIsAuthenticatedOverride?: boolean // kilocode_change
 }
 
 const ApiOptions = ({
@@ -175,6 +177,8 @@ const ApiOptions = ({
 	setErrorMessage,
 	hideKiloCodeButton = false,
 	currentApiConfigName, // kilocode_change
+	currentApiConfigId,
+	openAiCodexIsAuthenticatedOverride,
 }: ApiOptionsProps) => {
 	const { t } = useAppTranslation()
 	const {
@@ -184,6 +188,8 @@ const ApiOptions = ({
 		claudeCodeIsAuthenticated,
 		openAiCodexIsAuthenticated,
 	} = useExtensionState()
+	const effectiveOpenAiCodexIsAuthenticated =
+		openAiCodexIsAuthenticatedOverride ?? openAiCodexIsAuthenticated
 
 	const [customHeaders, setCustomHeaders] = useState<[string, string][]>(() => {
 		const headers = apiConfiguration?.openAiHeaders || {}
@@ -775,7 +781,9 @@ const ApiOptions = ({
 					apiConfiguration={apiConfiguration}
 					setApiConfigurationField={setApiConfigurationField}
 					simplifySettings={fromWelcomeView}
-					openAiCodexIsAuthenticated={openAiCodexIsAuthenticated}
+					openAiCodexIsAuthenticated={effectiveOpenAiCodexIsAuthenticated}
+					profileName={currentApiConfigName}
+					profileId={currentApiConfigId}
 				/>
 			)}
 
