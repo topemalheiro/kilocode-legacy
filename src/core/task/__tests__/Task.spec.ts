@@ -426,6 +426,72 @@ describe("Cline", () => {
 
 	describe("getEnvironmentDetails", () => {
 		describe("API conversation handling", () => {
+			it("should not replay the original opener when sending condensed history to non-bedrock providers", async () => {
+				const cline = new Task({
+					provider: mockProvider,
+					apiConfiguration: mockApiConfig,
+					task: "test task",
+					startTask: false,
+					context: mockExtensionContext,
+				})
+
+				const mockStreamForCondensedHistory = (async function* () {
+					yield { type: "text", text: "test response" }
+				})()
+
+				const createMessageSpy = vi.fn().mockReturnValue(mockStreamForCondensedHistory)
+				vi.spyOn(cline.api, "createMessage").mockImplementation(createMessageSpy)
+
+				const baseTs = Date.now()
+				cline.apiConversationHistory = [
+					{
+						role: "user" as const,
+						content: [{ type: "text" as const, text: "original opener" }],
+						ts: baseTs - 40,
+					},
+					{
+						role: "assistant" as const,
+						content: [{ type: "text" as const, text: "older assistant response" }],
+						ts: baseTs - 30,
+					},
+					{
+						role: "assistant" as const,
+						content: [{ type: "text" as const, text: "condensed summary" }],
+						ts: baseTs - 20,
+						isSummary: true,
+						condenseId: "summary-1",
+					},
+					{
+						role: "user" as const,
+						content: [{ type: "text" as const, text: "current task ask" }],
+						ts: baseTs - 10,
+					},
+				]
+
+				const iterator = cline.attemptApiRequest(0, { skipProviderRateLimit: true })
+				await iterator.next()
+
+				expect(createMessageSpy).toHaveBeenCalled()
+
+				const requestHistory = createMessageSpy.mock.calls.at(-1)?.[1] as Array<{
+					role: string
+					content?: string | Array<{ type?: string; text?: string }>
+				}>
+
+				const historyContainsText = (text: string) =>
+					requestHistory.some((message) =>
+						typeof message.content === "string"
+							? message.content.includes(text)
+							: Array.isArray(message.content)
+								? message.content.some((block) => block.type === "text" && block.text?.includes(text))
+								: false,
+					)
+
+				expect(historyContainsText("original opener")).toBe(false)
+				expect(historyContainsText("condensed summary")).toBe(true)
+				expect(historyContainsText("current task ask")).toBe(true)
+			})
+
 			it.skip("should clean conversation history before sending to API", async () => {
 				// Cline.create will now use our mocked getEnvironmentDetails
 				const [cline, task] = Task.create({
@@ -1075,6 +1141,7 @@ describe("Cline", () => {
 					context: {
 						globalStorageUri: { fsPath: "/test/storage" },
 					},
+					getTaskHistory: vi.fn().mockReturnValue([]),
 					getState: vi.fn().mockResolvedValue({
 						apiConfiguration: mockApiConfig,
 					}),

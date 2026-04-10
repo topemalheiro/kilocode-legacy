@@ -21,6 +21,10 @@ export type { RouterModels } // kilocode_change
 // Extend ProviderSettings (minus apiProvider) with handler-specific toggles.
 export type ApiHandlerOptions = Omit<ProviderSettings, "apiProvider"> & {
 	/**
+	 * Optional provider profile id used for per-profile credentials (e.g. OpenAI Codex OAuth).
+	 */
+	profileId?: string
+	/**
 	 * When true and using OpenAI Responses API models that support reasoning summaries,
 	 * include reasoning.summary: "auto" so the API returns summaries (we already parse
 	 * and surface them). Defaults to true; set to false to disable summaries.

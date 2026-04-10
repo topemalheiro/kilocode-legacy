@@ -88,6 +88,8 @@ vi.mock("vscode", () => ({
 vi.mock("../../../utils/tts", () => ({
 	setTtsEnabled: vi.fn(),
 	setTtsSpeed: vi.fn(),
+	setTtsPlaybackSpeed: vi.fn(),
+	setTtsVoice: vi.fn(),
 }))
 
 vi.mock("../../../api", () => ({
@@ -412,6 +414,44 @@ describe("ClineProvider - API Handler Rebuild Guard", () => {
 	})
 
 	describe("activateProviderProfile", () => {
+		test("preserves profileId when switching to an openai-codex profile", async () => {
+			const mockTask = new Task({
+				...defaultTaskOptions,
+				apiConfiguration: {
+					apiProvider: "openai-codex",
+					apiModelId: "gpt-5.4",
+				},
+			})
+			mockTask.api = {
+				getModel: vi.fn().mockReturnValue({
+					id: "gpt-5.4",
+					info: { contextWindow: 258000 },
+				}),
+			} as any
+
+			await provider.addClineToStack(mockTask)
+			;(provider as any).providerSettingsManager.listConfig = vi
+				.fn()
+				.mockResolvedValue([{ name: "Codex Secondary", id: "profile-456", apiProvider: "openai-codex" }])
+			;(provider as any).providerSettingsManager.activateProfile = vi.fn().mockResolvedValue({
+				name: "Codex Secondary",
+				id: "profile-456",
+				apiProvider: "openai-codex",
+				apiModelId: "gpt-5.4",
+			})
+
+			await provider.activateProviderProfile({ name: "Codex Secondary" })
+
+			expect(mockTask.updateApiConfiguration).toHaveBeenCalledWith(
+				expect.objectContaining({
+					apiProvider: "openai-codex",
+					apiModelId: "gpt-5.4",
+					profileId: "profile-456",
+				}),
+			)
+			expect(((await provider.getState()).apiConfiguration as any).profileId).toBe("profile-456")
+		})
+
 		test("calls updateApiConfiguration when provider/model unchanged but settings differ (explicit profile switch)", async () => {
 			const mockTask = new Task({
 				...defaultTaskOptions,
@@ -531,6 +571,35 @@ describe("ClineProvider - API Handler Rebuild Guard", () => {
 			// And task.apiConfiguration synced
 			expect((mockTask as any).apiConfiguration.apiProvider).toBe("openrouter")
 			expect((mockTask as any).apiConfiguration.openRouterModelId).toBe("anthropic/claude-3-5-sonnet-20241022")
+		})
+	})
+
+	describe("createTask", () => {
+		test("passes the active profileId into new task api configuration", async () => {
+			;(provider as any).providerSettingsManager.listConfig = vi
+				.fn()
+				.mockResolvedValue([{ name: "Codex Secondary", id: "profile-456", apiProvider: "openai-codex" }])
+			;(provider as any).providerSettingsManager.activateProfile = vi.fn().mockResolvedValue({
+				name: "Codex Secondary",
+				id: "profile-456",
+				apiProvider: "openai-codex",
+				apiModelId: "gpt-5.4",
+			})
+
+			await provider.activateProviderProfile({ name: "Codex Secondary" })
+
+			vi.mocked(Task).mockClear()
+			await provider.createTask("Use the other account")
+
+			expect(Task).toHaveBeenCalledWith(
+				expect.objectContaining({
+					apiConfiguration: expect.objectContaining({
+						apiProvider: "openai-codex",
+						apiModelId: "gpt-5.4",
+						profileId: "profile-456",
+					}),
+				}),
+			)
 		})
 	})
 

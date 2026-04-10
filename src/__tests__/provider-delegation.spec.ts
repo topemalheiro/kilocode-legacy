@@ -7,12 +7,18 @@ import { ClineProvider } from "../core/webview/ClineProvider"
 describe("ClineProvider.delegateParentAndOpenChild()", () => {
 	it("persists parent delegation metadata and emits TaskDelegated", async () => {
 		const providerEmit = vi.fn()
-		const parentTask = { taskId: "parent-1", emit: vi.fn() } as any
+		const parentTask = {
+			taskId: "parent-1",
+			emit: vi.fn(),
+			getTaskApiConfigName: vi.fn().mockResolvedValue("profile-a"),
+			flushPendingToolResultsToHistory: vi.fn().mockResolvedValue(undefined),
+		} as any
 
 		const updateTaskHistory = vi.fn()
 		const removeClineFromStack = vi.fn().mockResolvedValue(undefined)
 		const createTask = vi.fn().mockResolvedValue({ taskId: "child-1" })
 		const handleModeSwitch = vi.fn().mockResolvedValue(undefined)
+		const activateProviderProfile = vi.fn().mockResolvedValue(undefined)
 		const getTaskWithId = vi.fn().mockImplementation(async (id: string) => {
 			if (id === "parent-1") {
 				return {
@@ -46,6 +52,8 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 			getTaskWithId,
 			updateTaskHistory,
 			handleModeSwitch,
+			activateProviderProfile,
+			hasProviderProfileEntry: vi.fn().mockReturnValue(true),
 			log: vi.fn(),
 		} as unknown as ClineProvider
 
@@ -88,5 +96,9 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 
 		// Mode switch
 		expect(handleModeSwitch).toHaveBeenCalledWith("code")
+		expect(activateProviderProfile).toHaveBeenCalledWith(
+			{ name: "profile-a" },
+			{ persistModeConfig: false, persistTaskHistory: false },
+		)
 	})
 })

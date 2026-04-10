@@ -98,4 +98,41 @@ describe("OpenAiCodexHandler native tool calls", () => {
 			name: "attempt_completion",
 		})
 	})
+
+	it("passes profileId to OAuth manager when requesting tokens", async () => {
+		const getAccessTokenSpy = vi.spyOn(openAiCodexOAuthManager, "getAccessToken").mockResolvedValue("test-token")
+		const getAccountIdSpy = vi.spyOn(openAiCodexOAuthManager, "getAccountId").mockResolvedValue("acct_test")
+
+		handler = new OpenAiCodexHandler({ apiModelId: "gpt-5.2-codex", profileId: "profile-1" })
+		;(handler as any).client = {
+			responses: {
+				create: vi.fn().mockResolvedValue({
+					async *[Symbol.asyncIterator]() {
+						yield {
+							type: "response.completed",
+							response: {
+								id: "resp_1",
+								status: "completed",
+								output: [],
+								usage: { input_tokens: 1, output_tokens: 1 },
+							},
+						}
+					},
+				}),
+			},
+		}
+
+		const stream = handler.createMessage("system", [{ role: "user", content: "hello" } as any], {
+			taskId: "t",
+			toolProtocol: "native",
+			tools: [],
+		})
+
+		for await (const _chunk of stream) {
+			// drain stream
+		}
+
+		expect(getAccessTokenSpy).toHaveBeenCalledWith("profile-1")
+		expect(getAccountIdSpy).toHaveBeenCalledWith("profile-1")
+	})
 })

@@ -1,19 +1,23 @@
 import { ModelSelector } from "./chat/ModelSelector"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { useSelectedModel } from "../ui/hooks/useSelectedModel"
+import { BottomReasoningEffort } from "./BottomReasoningEffort"
 
 export const BottomApiConfig = () => {
 	const { currentApiConfigName, apiConfiguration, virtualQuotaActiveModel } = useExtensionState() // kilocode_change: Get virtual quota active model for UI display
-	const { id: selectedModelId, provider: selectedProvider } = useSelectedModel(apiConfiguration)
+	const {
+		id: selectedModelId,
+		provider: selectedProvider,
+		info: selectedModelInfo,
+	} = useSelectedModel(apiConfiguration)
 
 	if (!apiConfiguration) {
 		return null
 	}
 
 	return (
-		<>
-			{/* kilocode_change - add data-testid="model-selector" below */}
-			<div className="w-auto overflow-hidden" data-testid="model-selector">
+		<div className="flex items-center gap-1 min-w-0">
+			<div className="flex-1 min-w-0 overflow-hidden" data-testid="model-selector">
 				<ModelSelector
 					currentApiConfigName={currentApiConfigName}
 					apiConfiguration={apiConfiguration}
@@ -30,6 +34,11 @@ export const BottomApiConfig = () => {
 					}
 				/>
 			</div>
-		</>
+			<BottomReasoningEffort
+				currentApiConfigName={currentApiConfigName}
+				apiConfiguration={apiConfiguration}
+				modelInfo={selectedModelInfo}
+			/>
+		</div>
 	)
 }

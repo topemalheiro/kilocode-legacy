@@ -184,6 +184,7 @@ export class ClineProvider
 	public readonly latestAnnouncementId = "jan-2026-v3.41.0-openai-codex-provider-gpt52-fixes" // v3.41.0 OpenAI Codex Provider, GPT-5.2-codex, Bug Fixes
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
+	private pendingProviderConfigUpdate?: Promise<void>
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -1516,6 +1517,14 @@ export class ClineProvider
 
 	// Provider Profile Management
 
+	private withProfileId(
+		providerSettings: ProviderSettings,
+		profileId?: string,
+	): ProviderSettings & { profileId?: string } {
+		if (!profileId) return providerSettings
+		return { ...providerSettings, profileId }
+	}
+
 	/**
 	 * Updates the current task's API handler.
 	 * Rebuilds when:
@@ -1527,21 +1536,23 @@ export class ClineProvider
 	 */
 	private updateTaskApiHandlerIfNeeded(
 		providerSettings: ProviderSettings,
-		options: { forceRebuild?: boolean } = {},
+		options: { forceRebuild?: boolean; profileId?: string } = {},
 	): void {
 		const task = this.getCurrentTask()
 		if (!task) return
 
-		const { forceRebuild = false } = options
+		const { forceRebuild = false, profileId } = options
+		const resolvedProfileId = profileId ?? this.getActiveProviderProfileId()
+		const providerSettingsWithProfileId = this.withProfileId(providerSettings, resolvedProfileId)
 
 		// Determine if we need to rebuild using the previous configuration snapshot
 		const prevConfig = task.apiConfiguration
 		const prevProvider = prevConfig?.apiProvider
 		const prevModelId = prevConfig ? getModelId(prevConfig) : undefined
 		const prevToolProtocol = prevConfig?.toolProtocol
-		const newProvider = providerSettings.apiProvider
-		const newModelId = getModelId(providerSettings)
-		const newToolProtocol = providerSettings.toolProtocol
+		const newProvider = providerSettingsWithProfileId.apiProvider
+		const newModelId = getModelId(providerSettingsWithProfileId)
+		const newToolProtocol = providerSettingsWithProfileId.toolProtocol
 
 		const needsRebuild =
 			forceRebuild ||
@@ -1555,10 +1566,10 @@ export class ClineProvider
 			// created/destroyed to match the new protocol (XML vs native).
 			// Note: updateApiConfiguration is declared async but has no actual async operations,
 			// so we can safely call it without awaiting.
-			task.updateApiConfiguration(providerSettings)
+			task.updateApiConfiguration(providerSettingsWithProfileId)
 		} else {
 			// No rebuild needed, just sync apiConfiguration
-			;(task as any).apiConfiguration = providerSettings
+			;(task as any).apiConfiguration = providerSettingsWithProfileId
 		}
 	}
 
@@ -1570,6 +1581,12 @@ export class ClineProvider
 		return this.getProviderProfileEntries().find((profile) => profile.name === name)
 	}
 
+	getActiveProviderProfileId(): string | undefined {
+		const currentApiConfigName = this.contextProxy.getValues().currentApiConfigName
+		if (!currentApiConfigName) return undefined
+		return this.getProviderProfileEntry(currentApiConfigName)?.id
+	}
+
 	public hasProviderProfileEntry(name: string): boolean {
 		return !!this.getProviderProfileEntry(name)
 	}
@@ -1579,62 +1596,71 @@ export class ClineProvider
 		providerSettings: ProviderSettings,
 		activate: boolean = true,
 	): Promise<string | undefined> {
-		try {
-			// TODO: Do we need to be calling `activateProfile`? It's not
-			// clear to me what the source of truth should be; in some cases
-			// we rely on the `ContextProxy`'s data store and in other cases
-			// we rely on the `ProviderSettingsManager`'s data store. It might
-			// be simpler to unify these two.
-			const id = await this.providerSettingsManager.saveConfig(name, providerSettings)
+		const performUpsert = async (): Promise<string | undefined> => {
+			try {
+				// TODO: Do we need to be calling `activateProfile`? It's not
+				// clear to me what the source of truth should be; in some cases
+				// we rely on the `ContextProxy`'s data store and in other cases
+				// we rely on the `ProviderSettingsManager`'s data store. It might
+				// be simpler to unify these two.
+				const id = await this.providerSettingsManager.saveConfig(name, providerSettings)
 
-			if (activate) {
-				const { mode } = await this.getState()
+				if (activate) {
+					const { mode } = await this.getState()
 
-				// These promises do the following:
-				// 1. Adds or updates the list of provider profiles.
-				// 2. Sets the current provider profile.
-				// 3. Sets the current mode's provider profile.
-				// 4. Copies the provider settings to the context.
-				//
-				// Note: 1, 2, and 4 can be done in one `ContextProxy` call:
-				// this.contextProxy.setValues({ ...providerSettings, listApiConfigMeta: ..., currentApiConfigName: ... })
-				// We should probably switch to that and verify that it works.
-				// I left the original implementation in just to be safe.
-				await Promise.all([
-					this.updateGlobalState("listApiConfigMeta", await this.providerSettingsManager.listConfig()),
-					this.updateGlobalState("currentApiConfigName", name),
-					this.providerSettingsManager.setModeConfig(mode, id),
-					this.contextProxy.setProviderSettings(providerSettings),
-				])
+					// These promises do the following:
+					// 1. Adds or updates the list of provider profiles.
+					// 2. Sets the current provider profile.
+					// 3. Sets the current mode's provider profile.
+					// 4. Copies the provider settings to the context.
+					//
+					// Note: 1, 2, and 4 can be done in one `ContextProxy` call:
+					// this.contextProxy.setValues({ ...providerSettings, listApiConfigMeta: ..., currentApiConfigName: ... })
+					// We should probably switch to that and verify that it works.
+					// I left the original implementation in just to be safe.
+					await Promise.all([
+						this.updateGlobalState("listApiConfigMeta", await this.providerSettingsManager.listConfig()),
+						this.updateGlobalState("currentApiConfigName", name),
+						this.providerSettingsManager.setModeConfig(mode, id),
+						this.contextProxy.setProviderSettings(providerSettings),
+					])
 
-				// Change the provider for the current task.
-				// TODO: We should rename `buildApiHandler` for clarity (e.g. `getProviderClient`).
-				const task = this.getCurrentTask()
+					// Change the provider for the current task.
+					// TODO: We should rename `buildApiHandler` for clarity (e.g. `getProviderClient`).
+					const task = this.getCurrentTask()
+					const providerSettingsWithProfileId = this.withProfileId(providerSettings, id)
 
-				if (task) {
-					task.api = buildApiHandler(providerSettings)
+					if (task) {
+						task.api = buildApiHandler(providerSettingsWithProfileId)
+					}
+
+					await TelemetryService.instance.updateIdentity(providerSettings.kilocodeToken ?? "") // kilocode_change
+
+					this.updateTaskApiHandlerIfNeeded(providerSettings, { forceRebuild: true, profileId: id })
+
+					// Keep the current task's sticky provider profile in sync with the newly-activated profile.
+					await this.persistStickyProviderProfileToCurrentTask(name)
+				} else {
+					await this.updateGlobalState("listApiConfigMeta", await this.providerSettingsManager.listConfig())
 				}
 
-				await TelemetryService.instance.updateIdentity(providerSettings.kilocodeToken ?? "") // kilocode_change
+				await this.postStateToWebview()
+				return id
+			} catch (error) {
+				this.log(
+					`Error create new api configuration: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
+				)
 
-				this.updateTaskApiHandlerIfNeeded(providerSettings, { forceRebuild: true })
-
-				// Keep the current task's sticky provider profile in sync with the newly-activated profile.
-				await this.persistStickyProviderProfileToCurrentTask(name)
-			} else {
-				await this.updateGlobalState("listApiConfigMeta", await this.providerSettingsManager.listConfig())
+				vscode.window.showErrorMessage(t("common:errors.create_api_config"))
+				return undefined
 			}
-
-			await this.postStateToWebview()
-			return id
-		} catch (error) {
-			this.log(
-				`Error create new api configuration: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`,
-			)
-
-			vscode.window.showErrorMessage(t("common:errors.create_api_config"))
-			return undefined
 		}
+
+		if (activate) {
+			return this.trackProviderConfigUpdate(performUpsert)
+		}
+
+		return performUpsert()
 	}
 
 	async deleteProviderProfile(profileToDelete: ProviderSettingsEntry) {
@@ -1691,39 +1717,41 @@ export class ClineProvider
 		args: { name: string } | { id: string },
 		options?: { persistModeConfig?: boolean; persistTaskHistory?: boolean },
 	) {
-		const { name, id, ...providerSettings } = await this.providerSettingsManager.activateProfile(args)
+		return this.trackProviderConfigUpdate(async () => {
+			const { name, id, ...providerSettings } = await this.providerSettingsManager.activateProfile(args)
 
-		const persistModeConfig = options?.persistModeConfig ?? true
-		const persistTaskHistory = options?.persistTaskHistory ?? true
+			const persistModeConfig = options?.persistModeConfig ?? true
+			const persistTaskHistory = options?.persistTaskHistory ?? true
 
-		// See `upsertProviderProfile` for a description of what this is doing.
-		await Promise.all([
-			this.contextProxy.setValue("listApiConfigMeta", await this.providerSettingsManager.listConfig()),
-			this.contextProxy.setValue("currentApiConfigName", name),
-			this.contextProxy.setProviderSettings(providerSettings),
-		])
+			// See `upsertProviderProfile` for a description of what this is doing.
+			await Promise.all([
+				this.contextProxy.setValue("listApiConfigMeta", await this.providerSettingsManager.listConfig()),
+				this.contextProxy.setValue("currentApiConfigName", name),
+				this.contextProxy.setProviderSettings(providerSettings),
+			])
 
-		const { mode } = await this.getState()
+			const { mode } = await this.getState()
 
-		if (id && persistModeConfig) {
-			await this.providerSettingsManager.setModeConfig(mode, id)
-		}
+			if (id && persistModeConfig) {
+				await this.providerSettingsManager.setModeConfig(mode, id)
+			}
 
-		// Change the provider for the current task.
-		this.updateTaskApiHandlerIfNeeded(providerSettings, { forceRebuild: true })
+			// Change the provider for the current task.
+			this.updateTaskApiHandlerIfNeeded(providerSettings, { forceRebuild: true, profileId: id })
 
-		// Update the current task's sticky provider profile, unless this activation is
-		// being used purely as a non-persisting restoration (e.g., reopening a task from history).
-		if (persistTaskHistory) {
-			await this.persistStickyProviderProfileToCurrentTask(name)
-		}
+			// Update the current task's sticky provider profile, unless this activation is
+			// being used purely as a non-persisting restoration (e.g., reopening a task from history).
+			if (persistTaskHistory) {
+				await this.persistStickyProviderProfileToCurrentTask(name)
+			}
 
-		await this.postStateToWebview()
-		await TelemetryService.instance.updateIdentity(providerSettings.kilocodeToken ?? "") // kilocode_change
+			await this.postStateToWebview()
+			await TelemetryService.instance.updateIdentity(providerSettings.kilocodeToken ?? "") // kilocode_change
 
-		if (providerSettings.apiProvider) {
-			this.emit(RooCodeEventName.ProviderProfileChanged, { name, provider: providerSettings.apiProvider })
-		}
+			if (providerSettings.apiProvider) {
+				this.emit(RooCodeEventName.ProviderProfileChanged, { name, provider: providerSettings.apiProvider })
+			}
+		})
 	}
 
 	async updateCustomInstructions(instructions?: string) {
@@ -2587,7 +2615,8 @@ export class ClineProvider
 			openAiCodexIsAuthenticated: await (async () => {
 				try {
 					const { openAiCodexOAuthManager } = await import("../../integrations/openai-codex/oauth")
-					return await openAiCodexOAuthManager.isAuthenticated()
+					const profileId = this.getActiveProviderProfileId()
+					return await openAiCodexOAuthManager.isAuthenticated(profileId)
 				} catch {
 					return false
 				}
@@ -2710,7 +2739,7 @@ export class ClineProvider
 
 		// Return the same structure as before.
 		return {
-			apiConfiguration: providerSettings,
+			apiConfiguration: this.withProfileId(providerSettings, this.getActiveProviderProfileId()),
 			kilocodeDefaultModel: (
 				await getKilocodeDefaultModel(providerSettings.kilocodeToken, providerSettings.kilocodeOrganizationId)
 			).defaultModel, // kilocode_change
@@ -3256,6 +3285,7 @@ export class ClineProvider
 			cloudUserInfo,
 			remoteControlEnabled,
 		} = await this.getState()
+		const apiConfigurationWithProfileId = this.withProfileId(apiConfiguration, this.getActiveProviderProfileId())
 
 		// Single-open-task invariant: always enforce for user-initiated top-level tasks
 		if (!parentTask) {
@@ -3266,19 +3296,19 @@ export class ClineProvider
 			}
 		}
 
-		if (!ProfileValidator.isProfileAllowed(apiConfiguration, organizationAllowList)) {
+		if (!ProfileValidator.isProfileAllowed(apiConfigurationWithProfileId, organizationAllowList)) {
 			throw new OrganizationAllowListViolationError(t("common:errors.violated_organization_allowlist"))
 		}
 
 		const task = new Task({
 			provider: this,
 			context: this.context, // kilocode_change
-			apiConfiguration,
+			apiConfiguration: apiConfigurationWithProfileId,
 			enableDiff,
 			enableCheckpoints,
 			checkpointTimeout,
 			fuzzyMatchThreshold,
-			consecutiveMistakeLimit: apiConfiguration.consecutiveMistakeLimit,
+			consecutiveMistakeLimit: apiConfigurationWithProfileId.consecutiveMistakeLimit,
 			task: text,
 			images,
 			experiments,
@@ -3593,6 +3623,28 @@ export class ClineProvider
 
 	public get gitProperties(): GitProperties | undefined {
 		return this._gitProperties
+	}
+
+	private async trackProviderConfigUpdate<T>(operation: () => Promise<T>): Promise<T> {
+		const operationPromise = operation()
+		const trackedPromise = operationPromise.then(
+			() => undefined,
+			() => undefined,
+		)
+
+		this.pendingProviderConfigUpdate = trackedPromise
+
+		try {
+			return await operationPromise
+		} finally {
+			if (this.pendingProviderConfigUpdate === trackedPromise) {
+				this.pendingProviderConfigUpdate = undefined
+			}
+		}
+	}
+
+	public async waitForPendingProviderConfigUpdate(): Promise<void> {
+		await this.pendingProviderConfigUpdate
 	}
 
 	// kilocode_change start
@@ -3980,6 +4032,7 @@ Here is the project's README to help you get started:\n\n${mcpDetails.readmeCont
 				`[delegateParentAndOpenChild] Parent mismatch: expected ${parentTaskId}, current ${parent.taskId}`,
 			)
 		}
+		const parentApiConfigName = await parent.getTaskApiConfigName()
 		// 2) Flush pending tool results to API history BEFORE disposing the parent.
 		//    This is critical for native tool protocol: when tools are called before new_task,
 		//    their tool_result blocks are in userMessageContent but not yet saved to API history.
@@ -4026,6 +4079,21 @@ Here is the project's README to help you get started:\n\n${mcpDetails.readmeCont
 					(e as Error)?.message ?? String(e)
 				}`,
 			)
+		}
+
+		if (parentApiConfigName && this.hasProviderProfileEntry(parentApiConfigName)) {
+			try {
+				await this.activateProviderProfile(
+					{ name: parentApiConfigName },
+					{ persistModeConfig: false, persistTaskHistory: false },
+				)
+			} catch (error) {
+				this.log(
+					`[delegateParentAndOpenChild] Failed to preserve parent profile '${parentApiConfigName}' for child task: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
+				)
+			}
 		}
 
 		// 4) Create child as sole active (parent reference preserved for lineage)

@@ -161,6 +161,20 @@ export const N_MESSAGES_TO_KEEP = 3
 export const MIN_CONDENSE_THRESHOLD = 5 // Minimum percentage of context window to trigger condensing
 export const MAX_CONDENSE_THRESHOLD = 100 // Maximum percentage of context window to trigger condensing
 
+type MessagesSinceLastSummaryOptions = {
+	/**
+	 * Preserve the literal opener from the conversation when the slice begins
+	 * with an assistant summary. This is useful for generating a new summary,
+	 * but it should not be used when building the next live model request.
+	 */
+	preserveOriginalFirstUserMessage?: boolean
+	/**
+	 * Some providers require a leading user message even when resuming from an
+	 * assistant summary. Use a neutral bridge instead of replaying the original task.
+	 */
+	bridgeAssistantSummaryWithUserMessage?: boolean
+}
+
 const SUMMARY_PROMPT = `\
 Your task is to create a detailed summary of the conversation so far, paying close attention to the user's explicit requests and your previous actions.
 This summary should be thorough in capturing technical details, code patterns, and architectural decisions that would be essential for continuing with the conversation and supporting any continuing tasks.
@@ -273,7 +287,9 @@ export async function summarizeConversation(
 	const messagesBeforeKeep = summarySliceEnd > 0 ? messages.slice(0, summarySliceEnd) : []
 
 	// Get messages to summarize, including the first message and excluding the last N messages
-	let messagesToSummarize = getMessagesSinceLastSummary(messagesBeforeKeep) // kilocode_change: const=>let
+	let messagesToSummarize = getMessagesSinceLastSummary(messagesBeforeKeep, {
+		preserveOriginalFirstUserMessage: true,
+	}) // kilocode_change: const=>let
 
 	// kilocode_change start
 	// discard tool_use, because it won't have a result
@@ -555,8 +571,22 @@ export async function summarizeConversation(
 	return { messages: newMessages, summary, cost, newContextTokens, condenseId }
 }
 
+function createSummaryBridgeUserMessage(messages: ApiMessage[]): ApiMessage {
+	const summaryOrFirstMessageTs = messages[0]?.ts ?? Date.now()
+
+	return {
+		role: "user",
+		content: "Please continue from the following summary and recent conversation.",
+		ts: summaryOrFirstMessageTs - 1,
+	}
+}
+
 /* Returns the list of all messages since the last summary message, including the summary. Returns all messages if there is no summary. */
-export function getMessagesSinceLastSummary(messages: ApiMessage[]): ApiMessage[] {
+export function getMessagesSinceLastSummary(
+	messages: ApiMessage[],
+	options: MessagesSinceLastSummaryOptions = {},
+): ApiMessage[] {
+	const { preserveOriginalFirstUserMessage = false, bridgeAssistantSummaryWithUserMessage = false } = options
 	let lastSummaryIndexReverse = [...messages].reverse().findIndex((message) => message.isSummary)
 
 	if (lastSummaryIndexReverse === -1) {
@@ -566,24 +596,29 @@ export function getMessagesSinceLastSummary(messages: ApiMessage[]): ApiMessage[
 	const lastSummaryIndex = messages.length - lastSummaryIndexReverse - 1
 	const messagesSinceSummary = messages.slice(lastSummaryIndex)
 
-	// Bedrock requires the first message to be a user message.
-	// We preserve the original first message to maintain context.
-	// See https://github.com/RooCodeInc/Roo-Code/issues/4147
 	if (messagesSinceSummary.length > 0 && messagesSinceSummary[0].role !== "user") {
-		// Get the original first message (should always be a user message with the task)
-		const originalFirstMessage = messages[0]
-		if (originalFirstMessage && originalFirstMessage.role === "user") {
-			// Use the original first message unchanged to maintain full context
-			return [originalFirstMessage, ...messagesSinceSummary]
-		} else {
-			// Fallback to generic message if no original first message exists (shouldn't happen)
-			const userMessage: ApiMessage = {
-				role: "user",
-				content: "Please continue from the following summary:",
-				ts: messages[0]?.ts ? messages[0].ts - 1 : Date.now(),
+		if (preserveOriginalFirstUserMessage) {
+			// Preserve the original opener for summary generation so the summarizer
+			// can still see the literal task framing and slash-command context.
+			const originalFirstMessage = messages[0]
+			if (originalFirstMessage && originalFirstMessage.role === "user") {
+				return [originalFirstMessage, ...messagesSinceSummary]
 			}
-			return [userMessage, ...messagesSinceSummary]
 		}
+
+		if (bridgeAssistantSummaryWithUserMessage) {
+			// Some providers require a leading user message after condense, but
+			// replaying the original task opener causes the model to anchor on the
+			// wrong work. Use a neutral bridge instead.
+			return [createSummaryBridgeUserMessage(messagesSinceSummary), ...messagesSinceSummary]
+		}
+
+		if (preserveOriginalFirstUserMessage) {
+			// Fallback to a neutral bridge if there is no original user opener.
+			return [createSummaryBridgeUserMessage(messagesSinceSummary), ...messagesSinceSummary]
+		}
+
+		return messagesSinceSummary
 	}
 
 	return messagesSinceSummary

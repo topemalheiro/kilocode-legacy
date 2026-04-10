@@ -676,7 +676,7 @@ describe("getMessagesSinceLastSummary", () => {
 		expect(result).toEqual(messages)
 	})
 
-	it("should return messages since the last summary with original first user message", () => {
+	it("should return messages since the last summary without replaying the original first user message", () => {
 		const messages: ApiMessage[] = [
 			{ role: "user", content: "Hello", ts: 1 },
 			{ role: "assistant", content: "Hi there", ts: 2 },
@@ -687,6 +687,25 @@ describe("getMessagesSinceLastSummary", () => {
 
 		const result = getMessagesSinceLastSummary(messages)
 		expect(result).toEqual([
+			{ role: "assistant", content: "Summary of conversation", ts: 3, isSummary: true },
+			{ role: "user", content: "How are you?", ts: 4 },
+			{ role: "assistant", content: "I'm good", ts: 5 },
+		])
+	})
+
+	it("should preserve the original first user message for summarization when requested", () => {
+		const messages: ApiMessage[] = [
+			{ role: "user", content: "Hello", ts: 1 },
+			{ role: "assistant", content: "Hi there", ts: 2 },
+			{ role: "assistant", content: "Summary of conversation", ts: 3, isSummary: true },
+			{ role: "user", content: "How are you?", ts: 4 },
+			{ role: "assistant", content: "I'm good", ts: 5 },
+		]
+
+		const result = getMessagesSinceLastSummary(messages, {
+			preserveOriginalFirstUserMessage: true,
+		})
+		expect(result).toEqual([
 			{ role: "user", content: "Hello", ts: 1 },
 			{ role: "assistant", content: "Summary of conversation", ts: 3, isSummary: true },
 			{ role: "user", content: "How are you?", ts: 4 },
@@ -694,7 +713,7 @@ describe("getMessagesSinceLastSummary", () => {
 		])
 	})
 
-	it("should handle multiple summary messages and return since the last one with original first user message", () => {
+	it("should handle multiple summary messages and return since the last one", () => {
 		const messages: ApiMessage[] = [
 			{ role: "user", content: "Hello", ts: 1 },
 			{ role: "assistant", content: "First summary", ts: 2, isSummary: true },
@@ -705,9 +724,30 @@ describe("getMessagesSinceLastSummary", () => {
 
 		const result = getMessagesSinceLastSummary(messages)
 		expect(result).toEqual([
-			{ role: "user", content: "Hello", ts: 1 },
 			{ role: "assistant", content: "Second summary", ts: 4, isSummary: true },
 			{ role: "user", content: "What's new?", ts: 5 },
+		])
+	})
+
+	it("should prepend a neutral bridge user message when a provider requires user-leading condensed history", () => {
+		const messages: ApiMessage[] = [
+			{ role: "user", content: "Hello", ts: 10 },
+			{ role: "assistant", content: "Summary of conversation", ts: 20, isSummary: true },
+			{ role: "user", content: "Recent ask", ts: 30 },
+		]
+
+		const result = getMessagesSinceLastSummary(messages, {
+			bridgeAssistantSummaryWithUserMessage: true,
+		})
+
+		expect(result).toEqual([
+			{
+				role: "user",
+				content: "Please continue from the following summary and recent conversation.",
+				ts: 19,
+			},
+			{ role: "assistant", content: "Summary of conversation", ts: 20, isSummary: true },
+			{ role: "user", content: "Recent ask", ts: 30 },
 		])
 	})
 

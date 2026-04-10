@@ -67,6 +67,7 @@ const mockClineProvider = {
 	getCurrentTask: vi.fn(),
 	getTaskWithId: vi.fn(),
 	createTaskWithHistoryItem: vi.fn(),
+	waitForPendingProviderConfigUpdate: vi.fn(),
 	getActiveProviderProfileId: vi.fn(),
 	getProviderProfileEntry: vi.fn(),
 	getProviderProfileEntries: vi.fn(),

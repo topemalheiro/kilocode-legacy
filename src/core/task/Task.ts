@@ -2379,7 +2379,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				}
 			} catch (error) {
 				// If we fail to get the task name, fall back to the original task description
-				console.warn("[Task#resumeTaskFromHistory] Failed to get customName from history, using original task:", error)
+				console.warn(
+					"[Task#resumeTaskFromHistory] Failed to get customName from history, using original task:",
+					error,
+				)
 			}
 
 			// Include the <task> XML tag with task name, similar to startTask()
@@ -2413,7 +2416,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				}
 			} catch (error) {
 				// If we fail to get the task name, fall back to the original task description
-				console.warn("[Task#resumeTaskFromHistory] Failed to get customName from history, using original task:", error)
+				console.warn(
+					"[Task#resumeTaskFromHistory] Failed to get customName from history, using original task:",
+					error,
+				)
 			}
 
 			newUserContent.push({
@@ -4682,7 +4688,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// This allows non-destructive condensing where messages are tagged but not deleted,
 		// enabling accurate rewind operations while still sending condensed history to the API.
 		const effectiveHistory = getEffectiveApiHistory(this.apiConversationHistory)
-		const messagesSinceLastSummary = getMessagesSinceLastSummary(effectiveHistory)
+		const messagesSinceLastSummary = getMessagesSinceLastSummary(effectiveHistory, {
+			bridgeAssistantSummaryWithUserMessage: this.apiConfiguration.apiProvider === "bedrock",
+		})
 		const messagesWithoutImages = maybeRemoveImageBlocks(messagesSinceLastSummary, this.api)
 		const cleanConversationHistory = this.buildCleanConversationHistory(messagesWithoutImages as ApiMessage[])
 

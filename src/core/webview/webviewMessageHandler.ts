@@ -656,6 +656,7 @@ export const webviewMessageHandler = async (
 			// agentically running promises in old instance don't affect our new
 			// task. This essentially creates a fresh slate for the new task.
 			try {
+				await provider.waitForPendingProviderConfigUpdate()
 				const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
 				await provider.createTask(resolved.text, resolved.images)
 				// Task created successfully - notify the UI to reset
@@ -680,6 +681,7 @@ export const webviewMessageHandler = async (
 
 		case "askResponse":
 			{
+				await provider.waitForPendingProviderConfigUpdate()
 				const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
 				provider
 					.getCurrentTask()
