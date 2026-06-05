@@ -13,13 +13,17 @@ const STRICT_KIMI_TEMPERATURES = {
 		thinkingEnabled: 1.0,
 		thinkingDisabled: moonshotModels["kimi-k2.5"].defaultTemperature ?? 0.6,
 	},
+	"kimi-k2.6": {
+		thinkingEnabled: 1.0,
+		thinkingDisabled: moonshotModels["kimi-k2.6"].defaultTemperature ?? 0.6,
+	},
 	"kimi-for-coding": {
 		thinkingEnabled: 1.0,
 		thinkingDisabled: moonshotModels["kimi-for-coding"].defaultTemperature ?? 0.6,
 	},
 } as const
 
-type StrictKimiModelId = keyof typeof STRICT_KIMI_TEMPERATURES
+ type StrictKimiModelId = keyof typeof STRICT_KIMI_TEMPERATURES
 const STRICT_KIMI_MODELS = new Set(Object.keys(STRICT_KIMI_TEMPERATURES))
 // kilocode_change end
 

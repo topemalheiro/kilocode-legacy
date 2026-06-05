@@ -123,7 +123,8 @@
 					"id": "kilo-code.SidebarProvider",
 					"name": "%views.sidebar.name%",
 					"icon": "assets/icons/kilo.png",
-					"darkIcon": "assets/icons/kilo-dark.png"
+					"darkIcon": "assets/icons/kilo-dark.png",
+					"initialVisibility": true
 				}
 			]
 		},

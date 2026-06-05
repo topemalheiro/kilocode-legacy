@@ -115,6 +115,25 @@ export const moonshotModels = {
 		description:
 			"Kimi K2.5 is the latest generation of Moonshot AI's Kimi series, featuring improved reasoning capabilities and enhanced performance across diverse tasks.",
 	},
+	"kimi-k2.6": {
+		maxTokens: 262_144,
+		contextWindow: 262_144,
+		supportsImages: true,
+		supportsPromptCache: true,
+		supportsReasoningBinary: true,
+		supportsAdaptiveThinking: true,
+		preserveReasoning: true,
+		supportsNativeTools: true,
+		defaultToolProtocol: "native",
+		inputPrice: 0.6, // $0.60 per million tokens (cache miss)
+		outputPrice: 2.5, // $2.50 per million tokens
+		cacheWritesPrice: 0, // $0 per million tokens (cache miss)
+		cacheReadsPrice: 0.1, // $0.10 per million tokens (cache hit)
+		supportsTemperature: false,
+		defaultTemperature: 0.6,
+		description:
+			"Kimi K2.6 is Moonshot AI's latest multimodal model with advanced reasoning, vision, and agentic capabilities.",
+	},
 	// kilocode_change end
 } as const satisfies Record<string, ModelInfo>
 
