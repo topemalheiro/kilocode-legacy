@@ -396,6 +396,8 @@ export const EVALS_SETTINGS: RooCodeSettings = {
 
 	ttsEnabled: false,
 	ttsSpeed: 1,
+	ttsPlaybackSpeed: 1.5, // kilocode_change
+	ttsVoice: "male", // kilocode_change
 	ttsProvider: "system", // kilocode_change
 	soundEnabled: false,
 	soundVolume: 0.5,

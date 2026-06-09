@@ -219,7 +219,9 @@ const playTtsLinux = async (message: string): Promise<void> => {
 const playTtsInternal = async (message: string): Promise<void> => {
 	// kilocode_change start
 	if (ttsProvider === "piper") {
-		return playTtsPiper(message, voice === PIPER_DEFAULT_VOICE ? PIPER_DEFAULT_VOICE : voice)
+		// Map system voice names to a valid Piper voice ID.
+		const piperVoiceId = PIPER_VOICES.some((v) => v.id === voice) ? voice : PIPER_DEFAULT_VOICE
+		return playTtsPiper(message, piperVoiceId, speed)
 	}
 	// kilocode_change end
 

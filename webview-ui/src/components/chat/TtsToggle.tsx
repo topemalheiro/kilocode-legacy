@@ -38,13 +38,17 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 
 	const handleProviderChange = useCallback(
 		(provider: string) => {
-			setTtsProvider(provider as "system" | "piper")
+			const newProvider = provider as "system" | "piper"
+			setTtsProvider(newProvider)
+			// Reset voice to the first available voice for the new provider
+			const newVoice = newProvider === "piper" ? piperVoices[0].id : systemVoices[0].id
+			setTtsVoice(newVoice)
 			vscode.postMessage({
 				type: "updateSettings",
-				updatedSettings: { ttsProvider: provider as "system" | "piper" },
+				updatedSettings: { ttsProvider: newProvider, ttsVoice: newVoice },
 			})
 		},
-		[setTtsProvider],
+		[setTtsProvider, setTtsVoice],
 	)
 	// kilocode_change end
 

@@ -16,6 +16,8 @@ type NotificationSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	ttsPlaybackSpeed?: number // kilocode_change
 	ttsVoice?: string // kilocode_change
 	ttsProvider?: "system" | "piper" // kilocode_change
+	ttsPiperBinaryPath?: string // kilocode_change
+	ttsPiperModelDir?: string // kilocode_change
 	soundEnabled?: boolean
 	soundVolume?: number
 	systemNotificationsEnabled?: boolean // kilocode_change
@@ -26,6 +28,8 @@ type NotificationSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "ttsPlaybackSpeed"
 		| "ttsVoice"
 		| "ttsProvider" // kilocode_change
+		| "ttsPiperBinaryPath" // kilocode_change
+		| "ttsPiperModelDir" // kilocode_change
 		| "soundEnabled"
 		| "soundVolume"
 		| "systemNotificationsEnabled"
@@ -51,6 +55,8 @@ export const NotificationSettings = ({
 	ttsPlaybackSpeed, // kilocode_change
 	ttsVoice, // kilocode_change
 	ttsProvider, // kilocode_change
+	ttsPiperBinaryPath, // kilocode_change
+	ttsPiperModelDir, // kilocode_change
 	soundEnabled,
 	soundVolume,
 	systemNotificationsEnabled, // kilocode_change
@@ -123,7 +129,14 @@ export const NotificationSettings = ({
 							<label className="block font-medium mb-1">TTS Provider</label>
 							<select
 								value={ttsProvider ?? "system"}
-								onChange={(e) => setCachedStateField("ttsProvider", e.target.value)}
+								onChange={(e) => {
+									const newProvider = e.target.value as "system" | "piper"
+									setCachedStateField("ttsProvider", newProvider)
+									// Reset voice to the first available voice for the new provider
+									const newVoice =
+										newProvider === "piper" ? PIPER_TTS_VOICES[0].id : SYSTEM_TTS_VOICES[0].id
+									setCachedStateField("ttsVoice", newVoice)
+								}}
 								className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded">
 								<option value="system">System TTS (espeak-ng / say)</option>
 								<option value="piper">Piper TTS</option>
@@ -144,6 +157,41 @@ export const NotificationSettings = ({
 								))}
 							</select>
 						</SearchableSetting>
+						{/* Piper Configuration - kilocode_change */}
+						{ttsProvider === "piper" && (
+							<>
+								<SearchableSetting
+									settingId="notifications-tts-piper-binary"
+									section="notifications"
+									label="Piper Binary Path">
+									<label className="block font-medium mb-1">Piper Binary Path</label>
+									<input
+										type="text"
+										value={ttsPiperBinaryPath ?? ""}
+										onChange={(e) =>
+											setCachedStateField("ttsPiperBinaryPath", e.target.value || undefined)
+										}
+										placeholder="Leave empty to search PATH"
+										className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded"
+									/>
+								</SearchableSetting>
+								<SearchableSetting
+									settingId="notifications-tts-piper-model-dir"
+									section="notifications"
+									label="Piper Model Directory">
+									<label className="block font-medium mb-1">Piper Model Directory</label>
+									<input
+										type="text"
+										value={ttsPiperModelDir ?? ""}
+										onChange={(e) =>
+											setCachedStateField("ttsPiperModelDir", e.target.value || undefined)
+										}
+										placeholder="Directory containing .onnx voice models"
+										className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded"
+									/>
+								</SearchableSetting>
+							</>
+						)}
 					</div>
 				)}
 

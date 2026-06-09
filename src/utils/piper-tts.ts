@@ -163,10 +163,98 @@ export const getVoiceModelPath = (voiceId: string): string | undefined => {
 	return path.join(piperModelDir, voice.onnxFilename)
 }
 
+const cleanupTempFile = async (tempWav: string) => {
+	try {
+		await fs.unlink(tempWav)
+	} catch {
+		// ignore cleanup errors
+	}
+}
+
+/**
+ * Play a WAV file using the best available system audio player.
+ * sound-play does not support Linux, so we use platform-specific commands.
+ */
+const playWav = async (filePath: string): Promise<void> => {
+	const platform = process.platform
+
+	if (platform === "linux") {
+		// Try paplay (PipeWire/PulseAudio), then aplay (ALSA), then ffplay
+		const players = [
+			{ cmd: "paplay", args: [filePath] },
+			{ cmd: "aplay", args: [filePath] },
+			{ cmd: "ffplay", args: ["-nodisp", "-autoexit", filePath] },
+		]
+
+		for (const player of players) {
+			try {
+				await fs.access(player.cmd) // quick check, but may not work for PATH binaries
+			} catch {
+				// Not found at this exact path, but might still be in PATH — try anyway
+			}
+
+			try {
+				await new Promise<void>((resolve, reject) => {
+					const proc = spawn(player.cmd, player.args, { detached: false })
+					proc.on("error", (err) => reject(err))
+					proc.on("close", (code) => {
+						if (code === 0 || code === null) {
+							resolve()
+						} else {
+							reject(new Error(`${player.cmd} exited with code ${code}`))
+						}
+					})
+				})
+				return // Success — stop trying other players
+			} catch {
+				// Try next player
+			}
+		}
+
+		throw new Error("No suitable audio player found. Please install paplay, aplay, or ffplay.")
+	}
+
+	if (platform === "darwin") {
+		return new Promise<void>((resolve, reject) => {
+			const proc = spawn("afplay", [filePath], { detached: false })
+			proc.on("error", (err) => reject(err))
+			proc.on("close", (code) => {
+				if (code === 0 || code === null) {
+					resolve()
+				} else {
+					reject(new Error(`afplay exited with code ${code}`))
+				}
+			})
+		})
+	}
+
+	if (platform === "win32") {
+		const psCmd =
+			`Add-Type -AssemblyName presentationCore; ` +
+			`$player = New-Object system.windows.media.mediaplayer; ` +
+			`$player.open('${filePath}'); ` +
+			`$player.Play(); ` +
+			`Start-Sleep 1; Start-Sleep -s $player.NaturalDuration.TimeSpan.TotalSeconds; Exit;`
+		return new Promise<void>((resolve, reject) => {
+			const proc = spawn("powershell", ["-c", psCmd], { detached: false })
+			proc.on("error", (err) => reject(err))
+			proc.on("close", (code) => {
+				if (code === 0 || code === null) {
+					resolve()
+				} else {
+					reject(new Error(`powershell exited with code ${code}`))
+				}
+			})
+		})
+	}
+
+	throw new Error(`Unsupported platform for audio playback: ${platform}`)
+}
+
 /**
  * Play TTS using Piper. Generates a WAV file and plays it with sound-play.
  */
-export const playTtsPiper = async (message: string, voiceId: string): Promise<void> => {
+export const playTtsPiper = async (message: string, voiceId: string, speed = 1.5): Promise<void> => {
 	const piperPath = await findPiperBinary()
 	if (!piperPath) {
 		throw new Error(
@@ -188,10 +276,18 @@ export const playTtsPiper = async (message: string, voiceId: string): Promise<vo
 	const tempDir = os.tmpdir()
 	const tempWav = path.join(tempDir, `kilo-code-piper-${Date.now()}.wav`)
 
+	// Piper uses --length_scale where < 1.0 is faster, > 1.0 is slower.
+	// Clamp to sensible bounds to avoid audio artifacts.
+	const lengthScale = Math.max(0.25, Math.min(3.0, 1.0 / speed))
+
 	return new Promise<void>((resolve, reject) => {
-		const piperProcess = spawn(piperPath, ["--model", modelPath, "--output_file", tempWav], {
-			detached: false,
-		})
+		const piperProcess = spawn(
+			piperPath,
+			["--model", modelPath, "--output_file", tempWav, "--length_scale", String(lengthScale)],
+			{
+				detached: false,
+			},
+		)
 
 		currentPiperProcess = piperProcess
 		const thisProcess = piperProcess
@@ -200,10 +296,11 @@ export const playTtsPiper = async (message: string, voiceId: string): Promise<vo
 		piperProcess.stdin?.write(message)
 		piperProcess.stdin?.end()
 
-		piperProcess.on("error", (err) => {
+		piperProcess.on("error", async (err) => {
 			if (currentPiperProcess === thisProcess) {
 				currentPiperProcess = undefined
 			}
+			await cleanupTempFile(tempWav)
 			reject(new Error(`Piper process error: ${err.message}`))
 		})
 
@@ -213,25 +310,20 @@ export const playTtsPiper = async (message: string, voiceId: string): Promise<vo
 			}
 
 			if (code !== 0 && code !== null) {
+				await cleanupTempFile(tempWav)
 				reject(new Error(`Piper exited with code ${code}`))
 				return
 			}
 
 			// Play the generated WAV file
 			try {
-				const soundPlay = require("sound-play")
-				await soundPlay.play(tempWav)
+				await playWav(tempWav)
 				resolve()
 			} catch (playErr) {
 				console.error("[TTS] Failed to play WAV:", playErr)
 				reject(new Error(`Failed to play audio: ${playErr}`))
 			} finally {
-				// Clean up temp file
-				try {
-					await fs.unlink(tempWav)
-				} catch {
-					// ignore cleanup errors
-				}
+				await cleanupTempFile(tempWav)
 			}
 		})
 	})

@@ -221,6 +221,7 @@ describe("TTS Utils", () => {
 			tts.setTtsPiperBinaryPath("/usr/bin/piper")
 			tts.setTtsPiperModelDir("/models")
 			tts.setTtsVoice("en_US-ryan-high")
+			tts.setTtsSpeed(2.0)
 
 			mockedAccess.mockResolvedValue(undefined)
 
@@ -237,6 +238,38 @@ describe("TTS Utils", () => {
 					"/models/en_US-ryan-high.onnx",
 					"--output_file",
 					expect.stringContaining("kilo-code-piper-"),
+					"--length_scale",
+					"0.5",
+				],
+				{ detached: false },
+			)
+		})
+
+		it("maps default system voice to piper voice when provider is piper", async () => {
+			// Real-world path: user switches to Piper without changing voice from default "male"
+			tts.setTtsEnabled(true)
+			tts.setTtsProvider("piper")
+			tts.setTtsPiperBinaryPath("/usr/bin/piper")
+			tts.setTtsPiperModelDir("/models")
+			tts.setTtsVoice("male") // default system voice
+
+			mockedAccess.mockResolvedValue(undefined)
+
+			const fake = createFakeProcess()
+			mockedSpawn.mockReturnValue(fake as unknown as ChildProcess)
+
+			tts.playTts("hello world")
+			await vi.waitFor(() => expect(mockedSpawn).toHaveBeenCalled())
+
+			expect(mockedSpawn).toHaveBeenCalledWith(
+				"/usr/bin/piper",
+				[
+					"--model",
+					"/models/en_US-ryan-high.onnx",
+					"--output_file",
+					expect.stringContaining("kilo-code-piper-"),
+					"--length_scale",
+					expect.any(String),
 				],
 				{ detached: false },
 			)
@@ -251,6 +284,7 @@ describe("TTS Utils", () => {
 			tts.setTtsPiperBinaryPath(undefined)
 			tts.setTtsPiperModelDir("/models")
 			tts.setTtsVoice("en_US-ryan-high")
+			tts.setTtsSpeed(2.0)
 
 			// Simulate finding piper binary and model file
 			mockedAccess.mockImplementation((p: string | Buffer | URL) => {
@@ -273,6 +307,8 @@ describe("TTS Utils", () => {
 					"/models/en_US-ryan-high.onnx",
 					"--output_file",
 					expect.stringContaining("kilo-code-piper-"),
+					"--length_scale",
+					"0.5",
 				],
 				{ detached: false },
 			)
@@ -296,6 +332,7 @@ describe("TTS Utils", () => {
 			tts.setTtsPiperBinaryPath("/usr/bin/piper")
 			tts.setTtsPiperModelDir("/models")
 			tts.setTtsVoice("en_US-ryan-high")
+			tts.setTtsSpeed(2.0)
 
 			mockedAccess.mockResolvedValue(undefined)
 
