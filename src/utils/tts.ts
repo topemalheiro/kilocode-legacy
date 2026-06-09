@@ -1,3 +1,5 @@
+import { spawn, type ChildProcess } from "child_process"
+
 interface Say {
 	speak: (text: string, voice?: string, speed?: number, callback?: (err?: string) => void) => void
 	stop: () => void
@@ -15,35 +17,73 @@ export const setTtsEnabled = (enabled: boolean) => {
 	isTtsEnabled = enabled
 }
 
-let speed = 1.0
+// Speed variable - used by TTS
+let speed = 1.5 // Default to 1.5x for faster speech
 
 export const setTtsSpeed = (newSpeed: number) => {
 	console.log("[TTS] setTtsSpeed called, speed:", newSpeed)
 	speed = newSpeed
 }
 
-// Separate playback speed for TTS (used by UI)
+// Separate playback speed for TTS (used by UI) - sync with actual speed
 let playbackSpeed = 1.5
 
 export const setTtsPlaybackSpeed = (newSpeed: number) => {
 	console.log("[TTS] setTtsPlaybackSpeed called, speed:", newSpeed)
 	playbackSpeed = newSpeed
+	// Also update the actual TTS speed
+	speed = newSpeed
 }
 
 let voice = "male" // Default to male voice
 
 // Map UI voice names to actual Windows SAPI voice names
+// Note: Mark/George are OneCore voices (not available in SAPI), David is available in SAPI
 const getWindowsVoiceName = (voiceName: string): string => {
-	// Available voices on this system:
-	// - Microsoft Hazel Desktop (UK English, male)
-	// - Microsoft Zira Desktop (female)
+	// Microsoft David Desktop is the male voice in SAPI
+	// Microsoft Zira Desktop is the female voice in SAPI
 	if (voiceName === "male") {
-		return "Microsoft Hazel Desktop"
+		return "Microsoft David Desktop"
 	} else if (voiceName === "female") {
 		return "Microsoft Zira Desktop"
 	}
-	// Return as-is if already a proper voice name
-	return voiceName
+	// Chinese voices
+	if (voiceName === "male_cn" || voiceName === "female_cn") {
+		return voiceName === "male_cn" ? "Microsoft David Desktop" : "Microsoft Zira Desktop"
+	}
+	// Default to male voice (David - the only male in SAPI)
+	return "Microsoft David Desktop"
+}
+
+// Map UI voice names to espeak-ng voices
+const getLinuxVoiceName = (voiceName: string): string => {
+	if (voiceName === "male") {
+		return "en+m1"
+	} else if (voiceName === "female") {
+		return "en+f1"
+	}
+	if (voiceName === "male_cn") {
+		return "zh"
+	} else if (voiceName === "female_cn") {
+		return "zh+f2"
+	}
+	return "en+m1"
+}
+
+// Convert speed multiplier to espeak words-per-minute
+// espeak default is ~175 WPM; we treat 1.0x as 175 WPM
+const getLinuxSpeedWpm = (speedMultiplier: number): number => {
+	return Math.max(80, Math.min(500, Math.round(175 * speedMultiplier)))
+}
+
+// Escape special characters for PowerShell to prevent parsing errors
+const escapeForPowerShell = (text: string): string => {
+	// Replace problematic characters that break PowerShell's Speak command
+	return text
+		.replace(/'/g, "") // Remove single quotes
+		.replace(/"/g, '"') // Escape double quotes
+		.replace(/`/g, "``") // Escape backticks
+		.replace(/\$/g, "`$") // Escape dollar signs
 }
 
 export const setTtsVoice = (newVoice: string) => {
@@ -54,6 +94,7 @@ export const setTtsVoice = (newVoice: string) => {
 // Track current speak operation for cleanup
 let currentResolve: (() => void) | undefined = undefined
 let currentSayInstance: Say | undefined = undefined
+let currentLinuxProcess: ChildProcess | undefined = undefined
 let isCurrentlyPlaying = false
 
 // Queue for TTS messages
@@ -80,7 +121,70 @@ const processQueue = async () => {
 	console.log("[TTS] Queue processing complete")
 }
 
+const playTtsLinux = async (message: string): Promise<void> => {
+	return new Promise<void>((resolve, reject) => {
+		const linuxVoice = getLinuxVoiceName(voice)
+		const wpm = getLinuxSpeedWpm(speed)
+
+		// Try espeak-ng first, fallback to espeak
+		let espeakProcess: ChildProcess
+		const trySpawn = (cmd: string) => {
+			return spawn(cmd, ["-v", linuxVoice, "-s", String(wpm), message], {
+				detached: false,
+			})
+		}
+
+		espeakProcess = trySpawn("espeak-ng")
+
+		espeakProcess.on("error", (err) => {
+			if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+				// espeak-ng not found, try espeak
+				const fallback = trySpawn("espeak")
+				fallback.on("error", (err2) => {
+					console.error("[TTS] Failed to spawn espeak:", err2)
+					currentLinuxProcess = undefined
+					isCurrentlyPlaying = false
+					reject(new Error(`Failed to spawn espeak/espeak-ng: ${err2.message}`))
+				})
+				fallback.on("close", (code) => {
+					currentLinuxProcess = undefined
+					isCurrentlyPlaying = false
+					if (code === 0 || code === null) {
+						resolve()
+					} else {
+						reject(new Error(`espeak exited with code ${code}`))
+					}
+				})
+				currentLinuxProcess = fallback
+			} else {
+				console.error("[TTS] espeak-ng spawn error:", err)
+				currentLinuxProcess = undefined
+				isCurrentlyPlaying = false
+				reject(new Error(`espeak-ng error: ${err.message}`))
+			}
+		})
+
+		espeakProcess.on("close", (code) => {
+			currentLinuxProcess = undefined
+			isCurrentlyPlaying = false
+			if (code === 0 || code === null) {
+				resolve()
+			} else {
+				reject(new Error(`espeak-ng exited with code ${code}`))
+			}
+		})
+
+		currentLinuxProcess = espeakProcess
+	})
+}
+
 const playTtsInternal = async (message: string): Promise<void> => {
+	const platform = process.platform
+
+	if (platform === "linux") {
+		return playTtsLinux(message)
+	}
+
 	return new Promise<void>((resolve, reject) => {
 		let say: Say
 		try {
@@ -96,10 +200,12 @@ const playTtsInternal = async (message: string): Promise<void> => {
 
 		// Convert "male"/"female" to actual Windows voice names
 		const windowsVoice = getWindowsVoiceName(voice)
+		// Escape the message text for PowerShell (Windows only)
+		const escapedMessage = platform === "win32" ? escapeForPowerShell(message) : message
 		console.log("[TTS] Starting playback, voice:", voice, "-> windowsVoice:", windowsVoice, "speed:", speed)
 
 		try {
-			say.speak(message, windowsVoice, speed, (err) => {
+			say.speak(escapedMessage, windowsVoice, speed, (err) => {
 				console.log("[TTS] Speak finished, err:", err)
 
 				currentSayInstance = undefined
@@ -176,6 +282,17 @@ export const stopTts = () => {
 	isProcessingQueue = false
 	console.log("[TTS] Cleared TTS queue")
 
+	// Stop the current Linux process if any
+	if (currentLinuxProcess) {
+		try {
+			currentLinuxProcess.kill("SIGTERM")
+			console.log("[TTS] Killed Linux espeak process")
+		} catch (e) {
+			// Ignore errors when stopping
+		}
+		currentLinuxProcess = undefined
+	}
+
 	// Stop the current say instance if any
 	if (currentSayInstance) {
 		try {
@@ -189,13 +306,14 @@ export const stopTts = () => {
 
 	// Resolve any pending promise to prevent hanging
 	if (currentResolve) {
-		currentResolve()
+		try {
+			currentResolve()
+		} catch (e) {
+			// Ignore errors when resolving
+		}
 		currentResolve = undefined
 	}
 
 	isCurrentlyPlaying = false
 	console.log("[TTS] stopTts completed, isCurrentlyPlaying:", isCurrentlyPlaying)
 }
-
-// Export function to check if TTS is currently playing
-export const isTtsPlaying = () => isCurrentlyPlaying
