@@ -31,7 +31,7 @@ import { KiloProfileSelector } from "../kilocode/chat/KiloProfileSelector"
 import { MAX_IMAGES_PER_MESSAGE } from "./ChatView"
 import ContextMenu from "./ContextMenu"
 import { ImageWarningBanner } from "./ImageWarningBanner"
-import { VolumeX, Pin, Check, WandSparkles, SendHorizontal, Paperclip, MessageSquareX } from "lucide-react"
+import { VolumeX, Volume2, Pin, Check, WandSparkles, SendHorizontal, Paperclip, MessageSquareX } from "lucide-react"
 import { IndexingStatusBadge } from "./IndexingStatusBadge"
 import { MicrophoneButton } from "./MicrophoneButton" // kilocode_change: STT microphone button
 import { VolumeVisualizer } from "./VolumeVisualizer" // kilocode_change: STT volume level visual
@@ -1408,13 +1408,13 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		const handleTtsButtonClick = useCallback(() => {
 			if (isTtsPlaying) {
 				vscode.postMessage({ type: "stopTts" })
-			} else if (showTtsDisable) {
+			} else {
 				setTtsEnabled(false)
 				vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsEnabled: false } })
 				vscode.postMessage({ type: "stopTts" })
 				setShowTtsDisable(false)
 			}
-		}, [isTtsPlaying, showTtsDisable, setTtsEnabled])
+		}, [isTtsPlaying, setTtsEnabled])
 
 		const placeholderBottomText = `\n(${t("chat:addContext")}${shouldDisableImages ? `, ${t("chat:dragFiles")}` : `, ${t("chat:dragFilesImages")}`})`
 
@@ -1699,14 +1699,28 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					isVisible={isRecording}
 				/>
 
-				{(isTtsPlaying || showTtsDisable) && (
-					<StandardTooltip content={isTtsPlaying ? t("chat:stopTts") : "Disable TTS"}>
+				{ttsEnabled && (
+					<StandardTooltip
+						content={
+							isTtsPlaying
+								? t("chat:stopTts")
+								: showTtsDisable
+									? "Disable TTS"
+									: "TTS Enabled - Click to disable"
+						}>
 						<Button
 							variant="ghost"
 							size="icon"
-							className="absolute top-0 right-0 opacity-25 hover:opacity-100 z-10"
+							className={cn(
+								"absolute top-0 right-0 z-10",
+								isTtsPlaying && "text-vscode-errorForeground animate-pulse",
+							)}
 							onClick={handleTtsButtonClick}>
-							<VolumeX className="size-4" />
+							{isTtsPlaying || showTtsDisable ? (
+								<VolumeX className="size-4" />
+							) : (
+								<Volume2 className="size-4" />
+							)}
 						</Button>
 					</StandardTooltip>
 				)}
