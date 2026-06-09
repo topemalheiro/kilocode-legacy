@@ -42,6 +42,7 @@ export const setPiperModelDir = (dir: string | undefined) => {
 }
 
 let currentPiperProcess: ChildProcess | undefined = undefined
+let currentAudioPlayerProcess: ChildProcess | undefined = undefined
 
 /**
  * Find the piper executable. Checks the configured path first, then PATH.
@@ -196,8 +197,17 @@ const playWav = async (filePath: string): Promise<void> => {
 			try {
 				await new Promise<void>((resolve, reject) => {
 					const proc = spawn(player.cmd, player.args, { detached: false })
-					proc.on("error", (err) => reject(err))
+					currentAudioPlayerProcess = proc
+					proc.on("error", (err) => {
+						if (currentAudioPlayerProcess === proc) {
+							currentAudioPlayerProcess = undefined
+						}
+						reject(err)
+					})
 					proc.on("close", (code) => {
+						if (currentAudioPlayerProcess === proc) {
+							currentAudioPlayerProcess = undefined
+						}
 						if (code === 0 || code === null) {
 							resolve()
 						} else {
@@ -217,8 +227,17 @@ const playWav = async (filePath: string): Promise<void> => {
 	if (platform === "darwin") {
 		return new Promise<void>((resolve, reject) => {
 			const proc = spawn("afplay", [filePath], { detached: false })
-			proc.on("error", (err) => reject(err))
+			currentAudioPlayerProcess = proc
+			proc.on("error", (err) => {
+				if (currentAudioPlayerProcess === proc) {
+					currentAudioPlayerProcess = undefined
+				}
+				reject(err)
+			})
 			proc.on("close", (code) => {
+				if (currentAudioPlayerProcess === proc) {
+					currentAudioPlayerProcess = undefined
+				}
 				if (code === 0 || code === null) {
 					resolve()
 				} else {
@@ -237,8 +256,17 @@ const playWav = async (filePath: string): Promise<void> => {
 			`Start-Sleep 1; Start-Sleep -s $player.NaturalDuration.TimeSpan.TotalSeconds; Exit;`
 		return new Promise<void>((resolve, reject) => {
 			const proc = spawn("powershell", ["-c", psCmd], { detached: false })
-			proc.on("error", (err) => reject(err))
+			currentAudioPlayerProcess = proc
+			proc.on("error", (err) => {
+				if (currentAudioPlayerProcess === proc) {
+					currentAudioPlayerProcess = undefined
+				}
+				reject(err)
+			})
 			proc.on("close", (code) => {
+				if (currentAudioPlayerProcess === proc) {
+					currentAudioPlayerProcess = undefined
+				}
 				if (code === 0 || code === null) {
 					resolve()
 				} else {
@@ -340,5 +368,13 @@ export const stopPiperTts = () => {
 			// ignore
 		}
 		currentPiperProcess = undefined
+	}
+	if (currentAudioPlayerProcess) {
+		try {
+			currentAudioPlayerProcess.kill("SIGTERM")
+		} catch {
+			// ignore
+		}
+		currentAudioPlayerProcess = undefined
 	}
 }

@@ -164,6 +164,8 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			ghostServiceSettings, // kilocode_change
 			language, // User's VSCode display language
 			experiments, // kilocode_change: For speechToText experiment flag
+			ttsEnabled,
+			setTtsEnabled,
 		} = useExtensionState()
 
 		// kilocode_change start: Manage STT status and error state with auto-clearing
@@ -1389,16 +1391,30 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 		)
 
 		const [isTtsPlaying, setIsTtsPlaying] = useState(false)
+		const [showTtsDisable, setShowTtsDisable] = useState(false)
 
 		useEvent("message", (event: MessageEvent) => {
 			const message: ExtensionMessage = event.data
 
 			if (message.type === "ttsStart") {
 				setIsTtsPlaying(true)
+				setShowTtsDisable(false)
 			} else if (message.type === "ttsStop") {
 				setIsTtsPlaying(false)
+				setShowTtsDisable(true)
 			}
 		})
+
+		const handleTtsButtonClick = useCallback(() => {
+			if (isTtsPlaying) {
+				vscode.postMessage({ type: "stopTts" })
+			} else if (showTtsDisable) {
+				setTtsEnabled(false)
+				vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsEnabled: false } })
+				vscode.postMessage({ type: "stopTts" })
+				setShowTtsDisable(false)
+			}
+		}, [isTtsPlaying, showTtsDisable, setTtsEnabled])
 
 		const placeholderBottomText = `\n(${t("chat:addContext")}${shouldDisableImages ? `, ${t("chat:dragFiles")}` : `, ${t("chat:dragFilesImages")}`})`
 
@@ -1683,13 +1699,13 @@ export const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					isVisible={isRecording}
 				/>
 
-				{isTtsPlaying && (
-					<StandardTooltip content={t("chat:stopTts")}>
+				{(isTtsPlaying || showTtsDisable) && (
+					<StandardTooltip content={isTtsPlaying ? t("chat:stopTts") : "Disable TTS"}>
 						<Button
 							variant="ghost"
 							size="icon"
 							className="absolute top-0 right-0 opacity-25 hover:opacity-100 z-10"
-							onClick={() => vscode.postMessage({ type: "stopTts" })}>
+							onClick={handleTtsButtonClick}>
 							<VolumeX className="size-4" />
 						</Button>
 					</StandardTooltip>

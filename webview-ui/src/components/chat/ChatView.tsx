@@ -1531,20 +1531,20 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	// Function to handle mode switching
 	const switchToNextMode = useCallback(() => {
-		const allModes = getAllModes(customModes)
-		const currentModeIndex = allModes.findIndex((m) => m.slug === mode)
-		const nextModeIndex = (currentModeIndex + 1) % allModes.length
+		const cycleModes = getAllModes(customModes).filter((m) => m.slug !== "review")
+		const currentModeIndex = cycleModes.findIndex((m) => m.slug === mode)
+		const nextModeIndex = (currentModeIndex + 1) % cycleModes.length
 		// Update local state and notify extension to sync mode change
-		switchToMode(allModes[nextModeIndex].slug)
+		switchToMode(cycleModes[nextModeIndex].slug)
 	}, [mode, customModes, switchToMode])
 
 	// Function to handle switching to previous mode
 	const switchToPreviousMode = useCallback(() => {
-		const allModes = getAllModes(customModes)
-		const currentModeIndex = allModes.findIndex((m) => m.slug === mode)
-		const previousModeIndex = (currentModeIndex - 1 + allModes.length) % allModes.length
+		const cycleModes = getAllModes(customModes).filter((m) => m.slug !== "review")
+		const currentModeIndex = cycleModes.findIndex((m) => m.slug === mode)
+		const previousModeIndex = (currentModeIndex - 1 + cycleModes.length) % cycleModes.length
 		// Update local state and notify extension to sync mode change
-		switchToMode(allModes[previousModeIndex].slug)
+		switchToMode(cycleModes[previousModeIndex].slug)
 	}, [mode, customModes, switchToMode])
 
 	// Add keyboard event handler

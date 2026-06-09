@@ -1952,6 +1952,7 @@ export const webviewMessageHandler = async (
 			break
 		case "stopTts":
 			stopTts()
+			await provider.postMessageToWebview({ type: "ttsStop" })
 			break
 
 		case "testBrowserConnection":
