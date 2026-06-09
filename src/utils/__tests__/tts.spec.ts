@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { spawn, type ChildProcess } from "child_process"
+import * as fsPromises from "fs/promises"
 import type { EventEmitter } from "events"
 import * as tts from "../tts"
 
@@ -7,7 +8,23 @@ vi.mock("child_process", () => ({
 	spawn: vi.fn(),
 }))
 
+vi.mock("fs/promises", () => ({
+	access: vi.fn(),
+	open: vi.fn(),
+	mkdir: vi.fn(),
+	unlink: vi.fn(),
+}))
+
+vi.mock("os", () => ({
+	tmpdir: vi.fn(() => "/tmp"),
+}))
+
+vi.mock("sound-play", () => ({
+	play: vi.fn(),
+}))
+
 const mockedSpawn = vi.mocked(spawn)
+const mockedAccess = vi.mocked(fsPromises.access)
 
 describe("TTS Utils", () => {
 	let originalPlatform: PropertyDescriptor | undefined
@@ -16,6 +33,10 @@ describe("TTS Utils", () => {
 		originalPlatform = Object.getOwnPropertyDescriptor(process, "platform")
 		mockedSpawn.mockClear()
 		tts.stopTts()
+		// Reset Piper settings
+		tts.setTtsProvider("system")
+		tts.setTtsPiperBinaryPath(undefined)
+		tts.setTtsPiperModelDir(undefined)
 	})
 
 	afterEach(() => {
@@ -187,4 +208,106 @@ describe("TTS Utils", () => {
 			expect(fake2.kill).toHaveBeenCalledWith("SIGTERM")
 		})
 	})
+
+	// kilocode_change start: Piper TTS tests
+	describe("Piper", () => {
+		beforeEach(() => {
+			mockedAccess.mockReset()
+		})
+
+		it("spawns piper with correct arguments when provider is piper", async () => {
+			tts.setTtsEnabled(true)
+			tts.setTtsProvider("piper")
+			tts.setTtsPiperBinaryPath("/usr/bin/piper")
+			tts.setTtsPiperModelDir("/models")
+			tts.setTtsVoice("en_US-ryan-high")
+
+			mockedAccess.mockResolvedValue(undefined)
+
+			const fake = createFakeProcess()
+			mockedSpawn.mockReturnValue(fake as unknown as ChildProcess)
+
+			tts.playTts("hello world")
+			await vi.waitFor(() => expect(mockedSpawn).toHaveBeenCalled())
+
+			expect(mockedSpawn).toHaveBeenCalledWith(
+				"/usr/bin/piper",
+				[
+					"--model",
+					"/models/en_US-ryan-high.onnx",
+					"--output_file",
+					expect.stringContaining("kilo-code-piper-"),
+				],
+				{ detached: false },
+			)
+		})
+
+		it("falls back to finding piper in PATH when binary path not set", async () => {
+			const originalPath = process.env.PATH
+			process.env.PATH = "/usr/local/bin"
+
+			tts.setTtsEnabled(true)
+			tts.setTtsProvider("piper")
+			tts.setTtsPiperBinaryPath(undefined)
+			tts.setTtsPiperModelDir("/models")
+			tts.setTtsVoice("en_US-ryan-high")
+
+			// Simulate finding piper binary and model file
+			mockedAccess.mockImplementation((p: string | Buffer | URL) => {
+				if (typeof p === "string" && (p === "/usr/local/bin/piper" || p === "/models/en_US-ryan-high.onnx")) {
+					return Promise.resolve(undefined)
+				}
+				return Promise.reject(new Error("ENOENT"))
+			})
+
+			const fake = createFakeProcess()
+			mockedSpawn.mockReturnValue(fake as unknown as ChildProcess)
+
+			tts.playTts("hello")
+			await vi.waitFor(() => expect(mockedSpawn).toHaveBeenCalled())
+
+			expect(mockedSpawn).toHaveBeenCalledWith(
+				"/usr/local/bin/piper",
+				[
+					"--model",
+					"/models/en_US-ryan-high.onnx",
+					"--output_file",
+					expect.stringContaining("kilo-code-piper-"),
+				],
+				{ detached: false },
+			)
+
+			process.env.PATH = originalPath
+		})
+
+		it("skips Piper playback when TTS is disabled", async () => {
+			tts.setTtsEnabled(false)
+			tts.setTtsProvider("piper")
+
+			tts.playTts("should not play")
+			await new Promise((r) => setTimeout(r, 50))
+
+			expect(mockedSpawn).not.toHaveBeenCalled()
+		})
+
+		it("stops the current Piper process", async () => {
+			tts.setTtsEnabled(true)
+			tts.setTtsProvider("piper")
+			tts.setTtsPiperBinaryPath("/usr/bin/piper")
+			tts.setTtsPiperModelDir("/models")
+			tts.setTtsVoice("en_US-ryan-high")
+
+			mockedAccess.mockResolvedValue(undefined)
+
+			const fake = createFakeProcess()
+			mockedSpawn.mockReturnValue(fake as unknown as ChildProcess)
+
+			tts.playTts("long message")
+			await vi.waitFor(() => expect(mockedSpawn).toHaveBeenCalled())
+
+			tts.stopTts()
+			expect(fake.kill).toHaveBeenCalledWith("SIGTERM")
+		})
+	})
+	// kilocode_change end
 })

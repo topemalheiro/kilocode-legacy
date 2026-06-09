@@ -672,14 +672,14 @@ export const webviewMessageHandler = async (
 						await vscode.workspace
 							.getConfiguration(Package.name)
 							.update("deniedCommands", newValue, vscode.ConfigurationTarget.Global)
-				} else if (key === "ttsEnabled") {
-					newValue = value ?? true
-					setTtsEnabled(newValue as boolean)
-					if (!newValue) {
-						stopTts()
-					}
-					// Skip generic setValue - no need to save to globalState
-					continue
+					} else if (key === "ttsEnabled") {
+						newValue = value ?? true
+						setTtsEnabled(newValue as boolean)
+						if (!newValue) {
+							stopTts()
+						}
+						// Skip generic setValue - no need to save to globalState
+						continue
 					} else if (key === "ttsSpeed") {
 						newValue = value ?? 1.0
 						await updateGlobalState("ttsSpeed", newValue as number)
@@ -698,6 +698,33 @@ export const webviewMessageHandler = async (
 						console.log("[updateSettings] Saving ttsVoice:", newValue)
 						await updateGlobalState("ttsVoice", newValue as string)
 						setTtsVoice(newValue as string)
+						// Skip generic setValue - already saved via updateGlobalState above
+						continue
+					} else if (key === "ttsProvider") {
+						// kilocode_change: Handle TTS provider selection from webview
+						newValue = value === "piper" ? "piper" : "system"
+						console.log("[updateSettings] Saving ttsProvider:", newValue)
+						await updateGlobalState("ttsProvider", newValue as "system" | "piper")
+						const { setTtsProvider } = await import("../../utils/tts")
+						setTtsProvider(newValue as "system" | "piper")
+						// Skip generic setValue - already saved via updateGlobalState above
+						continue
+					} else if (key === "ttsPiperBinaryPath") {
+						// kilocode_change: Handle Piper binary path from webview
+						newValue = typeof value === "string" ? value : undefined
+						console.log("[updateSettings] Saving ttsPiperBinaryPath:", newValue)
+						await updateGlobalState("ttsPiperBinaryPath", newValue as string | undefined)
+						const { setTtsPiperBinaryPath } = await import("../../utils/tts")
+						setTtsPiperBinaryPath(newValue as string | undefined)
+						// Skip generic setValue - already saved via updateGlobalState above
+						continue
+					} else if (key === "ttsPiperModelDir") {
+						// kilocode_change: Handle Piper model directory from webview
+						newValue = typeof value === "string" ? value : undefined
+						console.log("[updateSettings] Saving ttsPiperModelDir:", newValue)
+						await updateGlobalState("ttsPiperModelDir", newValue as string | undefined)
+						const { setTtsPiperModelDir } = await import("../../utils/tts")
+						setTtsPiperModelDir(newValue as string | undefined)
 						// Skip generic setValue - already saved via updateGlobalState above
 						continue
 					} else if (key === "terminalShellIntegrationTimeout") {
@@ -1879,6 +1906,39 @@ export const webviewMessageHandler = async (
 			console.log("[ttsVoice message] Saving:", ttsVoice)
 			await updateGlobalState("ttsVoice", ttsVoice)
 			setTtsVoice(ttsVoice)
+			await provider.postStateToWebview()
+			break
+		case "ttsProvider":
+			// kilocode_change
+			const ttsProvider = message.text === "piper" ? "piper" : "system"
+			console.log("[ttsProvider message] Saving:", ttsProvider)
+			await updateGlobalState("ttsProvider", ttsProvider)
+			{
+				const { setTtsProvider } = await import("../../utils/tts")
+				setTtsProvider(ttsProvider)
+			}
+			await provider.postStateToWebview()
+			break
+		case "ttsPiperBinaryPath":
+			// kilocode_change
+			const ttsPiperBinaryPath = typeof message.text === "string" ? message.text : undefined
+			console.log("[ttsPiperBinaryPath message] Saving:", ttsPiperBinaryPath)
+			await updateGlobalState("ttsPiperBinaryPath", ttsPiperBinaryPath)
+			{
+				const { setTtsPiperBinaryPath } = await import("../../utils/tts")
+				setTtsPiperBinaryPath(ttsPiperBinaryPath)
+			}
+			await provider.postStateToWebview()
+			break
+		case "ttsPiperModelDir":
+			// kilocode_change
+			const ttsPiperModelDir = typeof message.text === "string" ? message.text : undefined
+			console.log("[ttsPiperModelDir message] Saving:", ttsPiperModelDir)
+			await updateGlobalState("ttsPiperModelDir", ttsPiperModelDir)
+			{
+				const { setTtsPiperModelDir } = await import("../../utils/tts")
+				setTtsPiperModelDir(ttsPiperModelDir)
+			}
 			await provider.postStateToWebview()
 			break
 		case "playTts":

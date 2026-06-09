@@ -102,7 +102,7 @@ const TaskHeader = ({
 
 	const textContainerRef = useRef<HTMLDivElement>(null)
 	const textRef = useRef<HTMLDivElement>(null)
-	const contextWindow = model?.contextWindow || 1
+	const contextWindow = model?.contextWindow || 0
 
 	// Detect if this task had any browser session activity so we can show a grey globe when inactive
 	const browserSessionStartIndex = useMemo(() => {

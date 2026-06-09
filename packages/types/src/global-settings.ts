@@ -169,6 +169,9 @@ export const globalSettingsSchema = z.object({
 	ttsSpeed: z.number().optional(),
 	ttsPlaybackSpeed: z.number().optional(), // kilocode_change: TTS playback speed (0.5-3.0)
 	ttsVoice: z.string().optional(), // kilocode_change: TTS voice selection
+	ttsProvider: z.enum(["system", "piper"]).optional(), // kilocode_change: TTS provider selection
+	ttsPiperBinaryPath: z.string().optional(), // kilocode_change: Custom Piper binary path
+	ttsPiperModelDir: z.string().optional(), // kilocode_change: Piper model directory
 	soundEnabled: z.boolean().optional(),
 	soundVolume: z.number().optional(),
 	systemNotificationsEnabled: z.boolean().optional(), // kilocode_change
@@ -393,6 +396,7 @@ export const EVALS_SETTINGS: RooCodeSettings = {
 
 	ttsEnabled: false,
 	ttsSpeed: 1,
+	ttsProvider: "system", // kilocode_change
 	soundEnabled: false,
 	soundVolume: 0.5,
 	dismissedNotificationIds: [], // kilocode_change

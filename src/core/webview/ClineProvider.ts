@@ -871,6 +871,17 @@ export class ClineProvider
 			setTtsVoice(ttsVoice ?? "male")
 		})
 
+		// kilocode_change start: Initialize Piper TTS settings
+		this.getState().then(async ({ ttsProvider, ttsPiperBinaryPath, ttsPiperModelDir }) => {
+			const { setTtsProvider, setTtsPiperBinaryPath, setTtsPiperModelDir } = await import("../../utils/tts")
+			setTtsProvider(ttsProvider ?? "system")
+			setTtsPiperBinaryPath(ttsPiperBinaryPath)
+			// Default model dir to global storage/piper-models if not set
+			const modelDir = ttsPiperModelDir ?? path.join(this.contextProxy.globalStorageUri.fsPath, "piper-models")
+			setTtsPiperModelDir(modelDir)
+		})
+		// kilocode_change end
+
 		// Set up webview options with proper resource roots
 		const resourceRoots = [this.contextProxy.extensionUri]
 
@@ -2238,6 +2249,9 @@ export class ClineProvider
 			ttsSpeed,
 			ttsPlaybackSpeed,
 			ttsVoice,
+			ttsProvider, // kilocode_change
+			ttsPiperBinaryPath, // kilocode_change
+			ttsPiperModelDir, // kilocode_change
 			diffEnabled,
 			enableCheckpoints,
 			checkpointTimeout,
@@ -2429,6 +2443,9 @@ export class ClineProvider
 			ttsSpeed: ttsSpeed ?? 1.0,
 			ttsPlaybackSpeed: ttsPlaybackSpeed ?? 1.5, // kilocode_change: match React state default
 			ttsVoice: ttsVoice ?? "male", // kilocode_change: match React state default
+			ttsProvider: ttsProvider ?? "system", // kilocode_change
+			ttsPiperBinaryPath: ttsPiperBinaryPath, // kilocode_change
+			ttsPiperModelDir: ttsPiperModelDir, // kilocode_change
 			diffEnabled: diffEnabled ?? true,
 			enableCheckpoints: enableCheckpoints ?? true,
 			checkpointTimeout: checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
@@ -2746,6 +2763,9 @@ export class ClineProvider
 			ttsSpeed: stateValues.ttsSpeed ?? 1.0,
 			ttsPlaybackSpeed: stateValues.ttsPlaybackSpeed ?? 1.5,
 			ttsVoice: stateValues.ttsVoice ?? "male",
+			ttsProvider: stateValues.ttsProvider ?? "system", // kilocode_change
+			ttsPiperBinaryPath: stateValues.ttsPiperBinaryPath, // kilocode_change
+			ttsPiperModelDir: stateValues.ttsPiperModelDir, // kilocode_change
 			diffEnabled: stateValues.diffEnabled ?? true,
 			enableCheckpoints: stateValues.enableCheckpoints ?? true,
 			checkpointTimeout: stateValues.checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,

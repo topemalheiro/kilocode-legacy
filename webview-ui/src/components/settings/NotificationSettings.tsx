@@ -15,6 +15,7 @@ type NotificationSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	ttsSpeed?: number
 	ttsPlaybackSpeed?: number // kilocode_change
 	ttsVoice?: string // kilocode_change
+	ttsProvider?: "system" | "piper" // kilocode_change
 	soundEnabled?: boolean
 	soundVolume?: number
 	systemNotificationsEnabled?: boolean // kilocode_change
@@ -24,25 +25,32 @@ type NotificationSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "ttsSpeed"
 		| "ttsPlaybackSpeed"
 		| "ttsVoice"
+		| "ttsProvider" // kilocode_change
 		| "soundEnabled"
 		| "soundVolume"
 		| "systemNotificationsEnabled"
 	>
 }
 
-// MiniMax TTS voice options
-const TTS_VOICES = [
+// kilocode_change start
+// System TTS voice options
+const SYSTEM_TTS_VOICES = [
 	{ id: "male", name: "Male (English)" },
 	{ id: "female", name: "Female (English)" },
 	{ id: "male_cn", name: "Male (Chinese)" },
 	{ id: "female_cn", name: "Female (Chinese)" },
 ]
 
+// Piper TTS voice options
+const PIPER_TTS_VOICES = [{ id: "en_US-ryan-high", name: "Ryan (Piper) — US English Male" }]
+// kilocode_change end
+
 export const NotificationSettings = ({
 	ttsEnabled,
 	ttsSpeed,
 	ttsPlaybackSpeed, // kilocode_change
 	ttsVoice, // kilocode_change
+	ttsProvider, // kilocode_change
 	soundEnabled,
 	soundVolume,
 	systemNotificationsEnabled, // kilocode_change
@@ -98,13 +106,28 @@ export const NotificationSettings = ({
 								<Slider
 									min={50}
 									max={350}
-									step={25}
+									step={5}
 									value={[Math.round((ttsPlaybackSpeed ?? 1.5) * 100)]}
 									onValueChange={([value]) => setCachedStateField("ttsPlaybackSpeed", value / 100)}
 									data-testid="tts-speed-slider"
 								/>
 								<span className="w-12">{Math.round((ttsPlaybackSpeed ?? 1.5) * 100)}%</span>
 							</div>
+						</SearchableSetting>
+
+						{/* Provider Selection - kilocode_change */}
+						<SearchableSetting
+							settingId="notifications-tts-provider"
+							section="notifications"
+							label="TTS Provider">
+							<label className="block font-medium mb-1">TTS Provider</label>
+							<select
+								value={ttsProvider ?? "system"}
+								onChange={(e) => setCachedStateField("ttsProvider", e.target.value)}
+								className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded">
+								<option value="system">System TTS (espeak-ng / say)</option>
+								<option value="piper">Piper TTS</option>
+							</select>
 						</SearchableSetting>
 
 						{/* Voice Selection - kilocode_change */}
@@ -114,7 +137,7 @@ export const NotificationSettings = ({
 								value={ttsVoice ?? "male"}
 								onChange={(e) => setCachedStateField("ttsVoice", e.target.value)}
 								className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded">
-								{TTS_VOICES.map((voice) => (
+								{(ttsProvider === "piper" ? PIPER_TTS_VOICES : SYSTEM_TTS_VOICES).map((voice) => (
 									<option key={voice.id} value={voice.id}>
 										{voice.name}
 									</option>

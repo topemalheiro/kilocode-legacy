@@ -75,7 +75,7 @@ const KiloTaskHeader = ({
 
 	const textContainerRef = useRef<HTMLDivElement>(null)
 	const textRef = useRef<HTMLDivElement>(null)
-	const contextWindow = model?.contextWindow || 1
+	const contextWindow = model?.contextWindow || 0
 
 	const { width: windowWidth } = useWindowSize()
 

@@ -208,6 +208,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 		ttsSpeed,
 		ttsPlaybackSpeed, // kilocode_change
 		ttsVoice, // kilocode_change
+		ttsProvider, // kilocode_change
+		ttsPiperBinaryPath, // kilocode_change
+		ttsPiperModelDir, // kilocode_change
 		soundVolume,
 		telemetrySetting,
 		terminalOutputLineLimit,
@@ -569,6 +572,9 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 					ttsSpeed,
 					ttsPlaybackSpeed, // kilocode_change
 					ttsVoice, // kilocode_change
+					ttsProvider, // kilocode_change
+					ttsPiperBinaryPath, // kilocode_change
+					ttsPiperModelDir, // kilocode_change
 					diffEnabled: diffEnabled ?? true,
 					enableCheckpoints: enableCheckpoints ?? false,
 					checkpointTimeout: checkpointTimeout ?? DEFAULT_CHECKPOINT_TIMEOUT_SECONDS,
@@ -1207,6 +1213,7 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>((props, ref)
 								ttsSpeed={ttsSpeed}
 								ttsPlaybackSpeed={ttsPlaybackSpeed} // kilocode_change
 								ttsVoice={ttsVoice} // kilocode_change
+								ttsProvider={ttsProvider} // kilocode_change
 								soundEnabled={soundEnabled}
 								soundVolume={soundVolume}
 								systemNotificationsEnabled={systemNotificationsEnabled}

@@ -520,6 +520,9 @@ export type ExtensionState = Pick<
 	| "ttsSpeed"
 	| "ttsPlaybackSpeed" // kilocode_change
 	| "ttsVoice" // kilocode_change
+	| "ttsProvider" // kilocode_change
+	| "ttsPiperBinaryPath" // kilocode_change
+	| "ttsPiperModelDir" // kilocode_change
 	| "soundEnabled"
 	| "soundVolume"
 	| "maxConcurrentFileReads"
@@ -772,6 +775,9 @@ export interface WebviewMessage {
 		| "ttsSpeed"
 		| "ttsPlaybackSpeed" // kilocode_change
 		| "ttsVoice" // kilocode_change
+		| "ttsProvider" // kilocode_change
+		| "ttsPiperBinaryPath" // kilocode_change
+		| "ttsPiperModelDir" // kilocode_change
 		| "openKeyboardShortcuts"
 		| "openMcpSettings"
 		| "openProjectMcpSettings"

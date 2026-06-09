@@ -1,5 +1,16 @@
 import { spawn, type ChildProcess } from "child_process"
 
+// kilocode_change start
+import {
+	playTtsPiper,
+	stopPiperTts,
+	setPiperBinaryPath,
+	setPiperModelDir,
+	PIPER_VOICES,
+	PIPER_DEFAULT_VOICE,
+} from "./piper-tts"
+// kilocode_change end
+
 interface Say {
 	speak: (text: string, voice?: string, speed?: number, callback?: (err?: string) => void) => void
 	stop: () => void
@@ -36,6 +47,23 @@ export const setTtsPlaybackSpeed = (newSpeed: number) => {
 }
 
 let voice = "male" // Default to male voice
+
+// kilocode_change start
+let ttsProvider: "system" | "piper" = "system"
+
+export const setTtsProvider = (provider: "system" | "piper") => {
+	console.log("[TTS] setTtsProvider called, provider:", provider)
+	ttsProvider = provider
+}
+
+export const setTtsPiperBinaryPath = (path: string | undefined) => {
+	setPiperBinaryPath(path)
+}
+
+export const setTtsPiperModelDir = (dir: string | undefined) => {
+	setPiperModelDir(dir)
+}
+// kilocode_change end
 
 // Map UI voice names to actual Windows SAPI voice names
 // Note: Mark/George are OneCore voices (not available in SAPI), David is available in SAPI
@@ -189,6 +217,12 @@ const playTtsLinux = async (message: string): Promise<void> => {
 }
 
 const playTtsInternal = async (message: string): Promise<void> => {
+	// kilocode_change start
+	if (ttsProvider === "piper") {
+		return playTtsPiper(message, voice === PIPER_DEFAULT_VOICE ? PIPER_DEFAULT_VOICE : voice)
+	}
+	// kilocode_change end
+
 	const platform = process.platform
 
 	if (platform === "linux") {
@@ -299,6 +333,11 @@ export const stopTts = () => {
 	isProcessingQueue = false
 	console.log("[TTS] Cleared TTS queue")
 
+	// kilocode_change start
+	// Stop Piper if active
+	stopPiperTts()
+	// kilocode_change end
+
 	// Stop the current Linux process if any
 	if (currentLinuxProcess) {
 		try {
@@ -334,3 +373,7 @@ export const stopTts = () => {
 	isCurrentlyPlaying = false
 	console.log("[TTS] stopTts completed, isCurrentlyPlaying:", isCurrentlyPlaying)
 }
+
+// kilocode_change start
+export { PIPER_VOICES, PIPER_DEFAULT_VOICE }
+// kilocode_change end

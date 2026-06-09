@@ -11,17 +11,42 @@ interface TtsToggleProps {
 }
 
 const TtsToggle = ({ className }: TtsToggleProps) => {
-	const { ttsEnabled, ttsPlaybackSpeed, ttsVoice, setTtsEnabled, setTtsPlaybackSpeed, setTtsVoice } =
-		useExtensionState()
+	const {
+		ttsEnabled,
+		ttsPlaybackSpeed,
+		ttsVoice,
+		ttsProvider,
+		setTtsEnabled,
+		setTtsPlaybackSpeed,
+		setTtsVoice,
+		setTtsProvider,
+	} = useExtensionState()
 	const [showSettings, setShowSettings] = useState(false)
 
-	// MiniMax TTS voices - you can expand this list
-	const voices = [
+	// kilocode_change start
+	const systemVoices = [
 		{ id: "male", name: "Male (English)" },
 		{ id: "female", name: "Female (English)" },
 		{ id: "male_cn", name: "Male (Chinese)" },
 		{ id: "female_cn", name: "Female (Chinese)" },
 	]
+
+	const piperVoices = [{ id: "en_US-ryan-high", name: "Ryan (Piper) — US English Male" }]
+
+	const voices = ttsProvider === "piper" ? piperVoices : systemVoices
+	// kilocode_change end
+
+	const handleProviderChange = useCallback(
+		(provider: string) => {
+			setTtsProvider(provider as "system" | "piper")
+			vscode.postMessage({
+				type: "updateSettings",
+				updatedSettings: { ttsProvider: provider as "system" | "piper" },
+			})
+		},
+		[setTtsProvider],
+	)
+	// kilocode_change end
 
 	const toggleTts = useCallback(() => {
 		const newValue = !ttsEnabled
@@ -75,7 +100,7 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 							type="range"
 							min={50}
 							max={350}
-							step={25}
+							step={5}
 							value={Math.round((ttsPlaybackSpeed ?? 1.5) * 100)}
 							onChange={(e) => handleSpeedChange(parseInt(e.target.value))}
 							className="w-full h-2 bg-vscode-progressBackground rounded-full appearance-none cursor-pointer accent-vscode-button-background"
@@ -84,6 +109,18 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 							<span>50%</span>
 							<span>350%</span>
 						</div>
+					</div>
+
+					{/* Provider Selection - kilocode_change */}
+					<div className="flex flex-col gap-1">
+						<label className="text-xs text-vscode-descriptionForeground">Provider</label>
+						<select
+							value={ttsProvider ?? "system"}
+							onChange={(e) => handleProviderChange(e.target.value)}
+							className="w-full px-2 py-1 text-sm bg-vscode-input-background text-vscode-editor-foreground border border-vscode-input-border rounded">
+							<option value="system">System TTS</option>
+							<option value="piper">Piper TTS</option>
+						</select>
 					</div>
 
 					{/* Voice Selection */}
