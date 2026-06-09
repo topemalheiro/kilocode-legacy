@@ -17,7 +17,7 @@ import { TelemetryService } from "@roo-code/telemetry"
 
 import { defaultModeSlug } from "../../../shared/modes"
 import { experimentDefault } from "../../../shared/experiments"
-import { setTtsEnabled } from "../../../utils/tts"
+import { setTtsEnabled, stopTts } from "../../../utils/tts"
 import { ContextProxy } from "../../config/ContextProxy"
 import { Task, TaskOptions } from "../../task/Task"
 import { safeWriteJson } from "../../../utils/safeWriteJson"
@@ -200,6 +200,9 @@ vi.mock("vscode", () => ({
 vi.mock("../../../utils/tts", () => ({
 	setTtsEnabled: vi.fn(),
 	setTtsSpeed: vi.fn(),
+	setTtsPlaybackSpeed: vi.fn(),
+	setTtsVoice: vi.fn(),
+	stopTts: vi.fn(),
 }))
 
 vi.mock("../../../api", () => ({
@@ -867,13 +870,12 @@ describe("ClineProvider", () => {
 		// Simulate setting tts to enabled
 		await messageHandler({ type: "updateSettings", updatedSettings: { ttsEnabled: true } })
 		expect(setTtsEnabled).toHaveBeenCalledWith(true)
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("ttsEnabled", true)
 		expect(mockPostMessage).toHaveBeenCalled()
 
 		// Simulate setting tts to disabled
 		await messageHandler({ type: "updateSettings", updatedSettings: { ttsEnabled: false } })
 		expect(setTtsEnabled).toHaveBeenCalledWith(false)
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("ttsEnabled", false)
+		expect(stopTts).toHaveBeenCalled()
 		expect(mockPostMessage).toHaveBeenCalled()
 	})
 

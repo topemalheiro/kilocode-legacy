@@ -632,6 +632,8 @@ export const webviewMessageHandler = async (
 
 		case "askResponse":
 			{
+				// Stop any playing TTS when user sends a response
+				stopTts()
 				const resolved = await resolveIncomingImages({ text: message.text, images: message.images })
 				provider
 					.getCurrentTask()
@@ -670,11 +672,14 @@ export const webviewMessageHandler = async (
 						await vscode.workspace
 							.getConfiguration(Package.name)
 							.update("deniedCommands", newValue, vscode.ConfigurationTarget.Global)
-					} else if (key === "ttsEnabled") {
-						newValue = value ?? true
-						setTtsEnabled(newValue as boolean)
-						// Skip generic setValue - no need to save to globalState
-						continue
+				} else if (key === "ttsEnabled") {
+					newValue = value ?? true
+					setTtsEnabled(newValue as boolean)
+					if (!newValue) {
+						stopTts()
+					}
+					// Skip generic setValue - no need to save to globalState
+					continue
 					} else if (key === "ttsSpeed") {
 						newValue = value ?? 1.0
 						await updateGlobalState("ttsSpeed", newValue as number)
@@ -1850,6 +1855,9 @@ export const webviewMessageHandler = async (
 			const ttsEnabled = message.bool ?? true
 			await updateGlobalState("ttsEnabled", ttsEnabled)
 			setTtsEnabled(ttsEnabled)
+			if (!ttsEnabled) {
+				stopTts()
+			}
 			await provider.postStateToWebview()
 			break
 		case "ttsSpeed":

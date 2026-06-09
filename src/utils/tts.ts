@@ -135,20 +135,26 @@ const playTtsLinux = async (message: string): Promise<void> => {
 		}
 
 		espeakProcess = trySpawn("espeak-ng")
+		const thisProcess = espeakProcess
 
 		espeakProcess.on("error", (err) => {
 			if ((err as NodeJS.ErrnoException).code === "ENOENT") {
 				// espeak-ng not found, try espeak
 				const fallback = trySpawn("espeak")
+				const thisFallback = fallback
 				fallback.on("error", (err2) => {
 					console.error("[TTS] Failed to spawn espeak:", err2)
-					currentLinuxProcess = undefined
-					isCurrentlyPlaying = false
+					if (currentLinuxProcess === thisFallback) {
+						currentLinuxProcess = undefined
+						isCurrentlyPlaying = false
+					}
 					reject(new Error(`Failed to spawn espeak/espeak-ng: ${err2.message}`))
 				})
 				fallback.on("close", (code) => {
-					currentLinuxProcess = undefined
-					isCurrentlyPlaying = false
+					if (currentLinuxProcess === thisFallback) {
+						currentLinuxProcess = undefined
+						isCurrentlyPlaying = false
+					}
 					if (code === 0 || code === null) {
 						resolve()
 					} else {
@@ -158,15 +164,19 @@ const playTtsLinux = async (message: string): Promise<void> => {
 				currentLinuxProcess = fallback
 			} else {
 				console.error("[TTS] espeak-ng spawn error:", err)
-				currentLinuxProcess = undefined
-				isCurrentlyPlaying = false
+				if (currentLinuxProcess === thisProcess) {
+					currentLinuxProcess = undefined
+					isCurrentlyPlaying = false
+				}
 				reject(new Error(`espeak-ng error: ${err.message}`))
 			}
 		})
 
 		espeakProcess.on("close", (code) => {
-			currentLinuxProcess = undefined
-			isCurrentlyPlaying = false
+			if (currentLinuxProcess === thisProcess) {
+				currentLinuxProcess = undefined
+				isCurrentlyPlaying = false
+			}
 			if (code === 0 || code === null) {
 				resolve()
 			} else {
@@ -197,6 +207,7 @@ const playTtsInternal = async (message: string): Promise<void> => {
 
 		currentSayInstance = say
 		currentResolve = resolve
+		const thisResolve = resolve
 
 		// Convert "male"/"female" to actual Windows voice names
 		const windowsVoice = getWindowsVoiceName(voice)
@@ -208,9 +219,13 @@ const playTtsInternal = async (message: string): Promise<void> => {
 			say.speak(escapedMessage, windowsVoice, speed, (err) => {
 				console.log("[TTS] Speak finished, err:", err)
 
-				currentSayInstance = undefined
-				currentResolve = undefined
-				isCurrentlyPlaying = false
+				// Only clear state if this is still the active playback
+				// (guards against race conditions after stopTts or new playTts)
+				if (currentResolve === thisResolve) {
+					currentSayInstance = undefined
+					currentResolve = undefined
+					isCurrentlyPlaying = false
+				}
 
 				if (err) {
 					console.error("[TTS] Speak error:", err)
@@ -221,9 +236,11 @@ const playTtsInternal = async (message: string): Promise<void> => {
 			})
 		} catch (speakErr) {
 			console.error("[TTS] Speak threw exception:", speakErr)
-			currentSayInstance = undefined
-			currentResolve = undefined
-			isCurrentlyPlaying = false
+			if (currentResolve === thisResolve) {
+				currentSayInstance = undefined
+				currentResolve = undefined
+				isCurrentlyPlaying = false
+			}
 			reject(new Error(`Speak failed: ${speakErr}`))
 		}
 	})

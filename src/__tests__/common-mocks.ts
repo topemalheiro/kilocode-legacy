@@ -184,6 +184,9 @@ export function setupCommonMocks() {
 	vi.mock("../../../utils/tts", () => ({
 		setTtsEnabled: vi.fn(),
 		setTtsSpeed: vi.fn(),
+		setTtsPlaybackSpeed: vi.fn(),
+		setTtsVoice: vi.fn(),
+		stopTts: vi.fn(),
 	}))
 
 	vi.mock("../../../api", () => ({

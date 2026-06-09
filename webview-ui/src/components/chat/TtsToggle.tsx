@@ -26,6 +26,9 @@ const TtsToggle = ({ className }: TtsToggleProps) => {
 	const toggleTts = useCallback(() => {
 		const newValue = !ttsEnabled
 		setTtsEnabled(newValue)
+		if (!newValue) {
+			vscode.postMessage({ type: "stopTts" })
+		}
 		vscode.postMessage({ type: "updateSettings", updatedSettings: { ttsEnabled: newValue } })
 	}, [ttsEnabled, setTtsEnabled])
 

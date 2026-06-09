@@ -152,5 +152,39 @@ describe("TTS Utils", () => {
 
 			expect(mockedSpawn).not.toHaveBeenCalled()
 		})
+
+		it("does not lose process reference when stopTts is called and new playback starts before close event", async () => {
+			tts.setTtsEnabled(true)
+
+			const fake1 = createFakeProcess()
+			const fake2 = createFakeProcess()
+
+			// First spawn returns fake1
+			mockedSpawn.mockReturnValueOnce(fake1 as unknown as ChildProcess)
+			// Second spawn returns fake2
+			mockedSpawn.mockReturnValueOnce(fake2 as unknown as ChildProcess)
+
+			// Start first playback
+			tts.playTts("first message")
+			await vi.waitFor(() => expect(mockedSpawn).toHaveBeenCalledTimes(1))
+
+			// Stop TTS (kills fake1)
+			tts.stopTts()
+			expect(fake1.kill).toHaveBeenCalledWith("SIGTERM")
+
+			// Start second playback BEFORE fake1 emits close
+			tts.playTts("second message")
+			await vi.waitFor(() => expect(mockedSpawn).toHaveBeenCalledTimes(2))
+
+			// Now fake1 emits close (as if it took a moment to exit)
+			fake1.emit("close", 143)
+
+			// Wait a tick for any async handlers
+			await new Promise((r) => setImmediate(r))
+
+			// stopTts should still be able to kill fake2
+			tts.stopTts()
+			expect(fake2.kill).toHaveBeenCalledWith("SIGTERM")
+		})
 	})
 })
